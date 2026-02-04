@@ -3,15 +3,18 @@ name: Deploy VitePress site to Pages
 on:
   push:
     branches: [main]
+  # 允许手动触发
+  workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
+# 确保同一时间只有一个部署任务，如果有新的任务，取消正在进行的
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -21,17 +24,22 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+          
       - name: Setup Pages
         uses: actions/configure-pages@v4
+        
       - name: Install dependencies
         run: npm install
+        
       - name: Build with VitePress
         run: npm run docs:build
+        
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -43,6 +51,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     needs: build
     runs-on: ubuntu-latest
+    name: Deploy
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
