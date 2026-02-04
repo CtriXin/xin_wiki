@@ -47,4 +47,4 @@ author: Gemini
 
 ## 关联文档
 - [知识库系统现代化与架构合并](./wiki-modernization-and-merge.md)
-- [README.md](../../README.md)
+- [首页](./../index.md)
