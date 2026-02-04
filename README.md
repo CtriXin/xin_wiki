@@ -1,7 +1,10 @@
 # Xin Knowledge Wiki
 
 > 统一的个人技术知识库 | 基于 VitePress
+
 > 采用 Ethereal Tech (Cyber-Noir) 现代视觉风格
+
+> 记录所以与AI共同迭代的过程...
 
 ## 🌐 在线预览
 **访问地址**: [https://ctrixin.github.io/xin_wiki/](https://ctrixin.github.io/xin_wiki/)
@@ -9,10 +12,6 @@
 ## 项目概述
 本项目是一个单仓库架构的个人知识库系统。它将核心 Markdown 内容与基于 VitePress 的展示层完美结合，通过极客风的深色主题提供极致的阅读体验。
 
-## 视觉风格
-- **主题**: Ethereal Tech (Cyber-Noir)
-- **配色**: 纯黑底色 (#020202) + 电光蓝 + 玫红 + 紫罗兰
-- **特性**: 动态卡片发光效果、代码高亮深度优化、全响应式设计
 
 ## 常用操作
 
