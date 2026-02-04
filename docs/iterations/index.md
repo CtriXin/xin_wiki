@@ -2,6 +2,7 @@
 
 记录知识库系统的每一次重大升级与架构调整。
 
+- [2026-02-04 变更日志格式规范升级](./changelog-format-update.md)
 - [2026-02-04 Skill Frontmatter 修复记录](./skill-frontmatter-fix.md)
 - [2026-02-04 自动化部署与外网访问](./deployment-and-access.md)
 - [2026-02-04 搜索功能增强与 Skill 同步自动化](./search-and-automation.md)

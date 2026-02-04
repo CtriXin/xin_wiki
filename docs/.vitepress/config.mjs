@@ -6,17 +6,16 @@ export default defineConfig({
 
   // 主题配置
   themeConfig: {
-    // 导航栏
+    // 导航栏 - 重排顺序，移除模板
     nav: [
       { text: '首页', link: '/' },
-      { text: '变更日志', link: '/changelog' },
       { text: '迭代', link: '/iterations/' },
       { text: '脚本', link: '/scripts/' },
       { text: '功能', link: '/features/' },
-      { text: '模板', link: '/templates/' },
+      { text: '变更日志', link: '/changelog' },
     ],
 
-    // 侧边栏
+    // 侧边栏 - 移除模板
     sidebar: {
       '/iterations/': [
         {
@@ -43,15 +42,6 @@ export default defineConfig({
           ]
         }
       ],
-      '/templates/': [
-        {
-          text: '内容模板',
-          items: [
-            { text: '脚本模板', link: '/templates/script' },
-            { text: 'Bug修复模板', link: '/templates/bugfix' },
-          ]
-        }
-      ],
       '/features/': [
         {
           text: '功能开发',
@@ -70,88 +60,44 @@ export default defineConfig({
       ]
     },
 
-    // 页脚
     footer: {
       message: '用 ❤️ 记录技术成长',
       copyright: 'Copyright © 2026'
     },
 
-    // 搜索
     search: {
       provider: 'local',
       options: {
         translations: {
-          button: {
-            buttonText: '搜索文档',
-            buttonAriaLabel: '搜索文档'
-          },
+          button: { buttonText: '搜索文档', buttonAriaLabel: '搜索文档' },
           modal: {
             noResultsText: '无法找到相关结果',
             resetButtonTitle: '清除查询条件',
-            footer: {
-              selectText: '选择',
-              navigateText: '切换',
-              closeText: '关闭'
-            }
+            footer: { selectText: '选择', navigateText: '切换', closeText: '关闭' }
           }
         }
       }
     },
 
-    // 社交链接
     socialLinks: [
       { icon: 'github', link: 'https://github.com/CtriXin/xin_wiki' }
     ],
 
-    // 编辑链接
-    editLink: {
-      pattern: 'https://github.com/CtriXin/xin_wiki/edit/main/docs/:path',
-      text: '在 GitHub 上编辑此页'
-    },
-
-    // 最后更新时间
-    lastUpdated: {
-      text: '最后更新于',
-      formatOptions: {
-        dateStyle: 'short',
-        timeStyle: 'short'
-      }
-    },
-
-    // 大纲显示层级
-    outline: {
-      level: 'deep',
-      label: '页面导航'
-    },
-
-    // 文档翻页
-    docFooter: {
-      prev: '上一篇',
-      next: '下一篇'
-    },
-
-    // 返回顶部
+    outline: { level: 'deep', label: '页面导航' },
+    docFooter: { prev: '上一篇', next: '下一篇' },
     returnToTopLabel: '返回顶部',
-
-    // 菜单标签
     sidebarMenuLabel: '菜单',
     darkModeSwitchLabel: '主题'
   },
 
-  // 生成配置
   base: '/xin_wiki/',
   cleanUrls: true,
 
-  // Markdown 配置
   markdown: {
     lineNumbers: true,
-    theme: 'one-dark-pro',
-    config: (md) => {
-      // 自定义 Markdown 插件
-    }
+    theme: 'one-dark-pro'
   },
 
-  // 头部配置
   head: [
     ['link', { rel: 'icon', href: '/favicon.ico' }],
     ['meta', { name: 'theme-color', content: '#3a86ff' }],

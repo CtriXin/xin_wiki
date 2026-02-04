@@ -89,48 +89,51 @@ body {
 }
 
 /* ============================================================
-   CODE BLOCK ENHANCEMENTS (Readability Priority)
+   CONTENT & SPACING (Refined)
    ============================================================ */
+.vp-doc h1 {
+  background: linear-gradient(120deg, #fff, rgba(255,255,255,0.7));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 2.5rem !important; /* Increase space after title */
+}
+
+/* Style for the "Summary" blockquote */
+.vp-doc blockquote {
+  margin: 2.5rem 0 !important;
+  padding: 1.2rem 1.8rem;
+  background: rgba(58, 134, 255, 0.05);
+  border-left: 4px solid var(--vp-c-brand-1);
+  border-radius: 0 12px 12px 0;
+  font-style: normal;
+  color: var(--vp-c-text-2);
+}
+
+.vp-doc blockquote strong {
+  color: var(--vp-c-brand-1);
+  font-weight: 600;
+}
+
+/* Code Block Spacing */
 .vp-doc [class*='language-'] {
-  background-color: #020202 !important; /* Pure Black for contrast */
+  background-color: #020202 !important; 
   border: 1px solid #1a1a1a;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-  margin: 1.5rem 0;
+  margin: 2rem 0;
 }
 
 .vp-doc code {
   font-size: 0.95em;
   line-height: 1.6;
   font-family: var(--vp-font-family-mono);
-  color: #f8f8f2; /* Bright default text */
+  color: #f8f8f2;
 }
 
-/* Shiki Token Brightness Overrides */
+/* Syntax Highlighting Visibility */
 .shiki span {
   filter: saturate(1.2) brightness(1.1);
-}
-
-/* Syntax Highlighting Visibility Tweak */
-.vp-doc .shiki .keyword, 
-.vp-doc .shiki .storage,
-.vp-doc .shiki .variable.language {
-  color: #ff79c6 !important; /* Bright Pink */
-}
-.vp-doc .shiki .string {
-  color: #f1fa8c !important; /* Bright Yellow */
-}
-.vp-doc .shiki .comment {
-  color: #6272a4 !important; /* Distinct Grey-Blue */
-  font-style: italic;
-}
-.vp-doc .shiki .function {
-  color: #50fa7b !important; /* Bright Green */
-}
-
-/* Scrollbar in Code Blocks */
-.vp-doc [class*='language-']::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Force light colors on Markdown text */
@@ -142,6 +145,7 @@ body {
 .vp-doc table {
   background: rgba(255, 255, 255, 0.01);
   border: 1px solid var(--vp-c-divider);
+  margin: 2rem 0;
 }
 
 .vp-doc th {
