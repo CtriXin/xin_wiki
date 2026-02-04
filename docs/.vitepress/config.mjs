@@ -26,6 +26,7 @@ export default defineConfig({
             { text: '知识库方案对比', link: '/iterations/wiki-solution-comparison' },
             { text: '知识库系统搭建', link: '/iterations/knowledge-wiki-system' },
             { text: '现代化与架构合并', link: '/iterations/wiki-modernization-and-merge' },
+            { text: '自动化部署与外网访问', link: '/iterations/deployment-and-access' },
           ]
         }
       ],
@@ -97,12 +98,12 @@ export default defineConfig({
 
     // 社交链接
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/yourname' }
+      { icon: 'github', link: 'https://github.com/CtriXin/xin_wiki' }
     ],
 
     // 编辑链接
     editLink: {
-      pattern: 'https://github.com/yourname/knowledge-wiki/edit/main/docs/:path',
+      pattern: 'https://github.com/CtriXin/xin_wiki/edit/main/docs/:path',
       text: '在 GitHub 上编辑此页'
     },
 
