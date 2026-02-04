@@ -26,7 +26,9 @@ export default defineConfig({
             { text: '知识库方案对比', link: '/iterations/wiki-solution-comparison' },
             { text: '知识库系统搭建', link: '/iterations/knowledge-wiki-system' },
             { text: '现代化与架构合并', link: '/iterations/wiki-modernization-and-merge' },
+            { text: '搜索增强与 Skill 同步', link: '/iterations/search-and-automation' },
             { text: '自动化部署与外网访问', link: '/iterations/deployment-and-access' },
+            { text: 'Skill Frontmatter 修复', link: '/iterations/skill-frontmatter-fix' },
           ]
         }
       ],
