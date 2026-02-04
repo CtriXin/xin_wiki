@@ -1,0 +1,33 @@
+# Dependencies
+node_modules
+.DS_Store
+dist
+dist-ssr
+cache
+.cache
+
+# Local env files
+.env.local
+.env.*.local
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs
+*.njsproj
+*.sln
+*.sw?
+
+# System Files
+Thumbs.db
+
+# VitePress cache
+docs/.vitepress/cache
+docs/.vitepress/dist

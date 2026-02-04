@@ -1,57 +1,51 @@
-# Knowledge Wiki Web
+# Xin Knowledge Wiki
 
-> 基于 VitePress 的个人知识库网站
-> 比维基百科更好看、更现代、支持搜索和暗黑模式
+> 统一的个人技术知识库 | 基于 VitePress
+> 采用 Ethereal Tech (Cyber-Noir) 现代视觉风格
 
-## 效果预览
+## 项目概述
 
-- 🎨 **现代化设计** - 简洁、专业、响应式
-- 🌙 **暗黑模式** - 自动/手动切换
-- 🔍 **全文搜索** - 本地搜索，无需后端
-- 📱 **移动端适配** - 完美支持手机访问
-- ⚡ **极速加载** - 静态生成，CDN 友好
-- 📝 **Markdown 原生** - 直接复用现有内容
+本项目是一个单仓库架构的个人知识库系统。它将核心 Markdown 内容与基于 VitePress 的展示层完美结合，通过极客风的深色主题提供极致的阅读体验。
+
+## 视觉风格
+
+- **主题**: Ethereal Tech (Cyber-Noir)
+- **配色**: 纯黑底色 (#020202) + 电光蓝 + 玫红 + 紫罗兰
+- **特性**: 动态卡片发光效果、代码高亮深度优化、全响应式设计
 
 ## 快速开始
 
 ```bash
-# 1. 进入项目目录
-cd knowledge-wiki-web
-
-# 2. 安装依赖
+# 1. 安装依赖
 npm install
 
-# 3. 本地预览
+# 2. 本地预览 (实时热更新)
 npm run dev
 
-# 4. 构建（生成静态网站）
+# 3. 构建静态站点
 npm run build
 ```
 
-## 部署方式
-
-1. **GitHub Pages**（免费）- 推送到 GitHub 自动部署
-2. **Vercel/Netlify**（免费）- 连接 GitHub 自动构建
-3. **自有服务器** - 上传 dist 文件夹即可
-
 ## 目录结构
 
-```
-knowledge-wiki-web/
-├── docs/                    # 文档内容（从这里开始写）
-│   ├── index.md            # 首页
-│   ├── changelog.md        # 变更日志
-│   ├── scripts/            # 脚本文档
-│   └── ...
-├── .vitepress/             # 配置文件
-│   ├── config.js           # 站点配置
-│   └── theme/              # 自定义主题
+```text
+.
+├── docs/                   # 核心内容 (Markdown)
+│   ├── scripts/            # 脚本工具
+│   ├── iterations/         # 系统迭代
+│   ├── templates/          # 内容模板
+│   └── .vitepress/         # 站点配置与主题
+├── .claude-skill.md        # AI 协作指南
 ├── package.json
 └── README.md
 ```
 
-## 与现有知识库的关联
+## 创作流程
 
-- `docs/` 目录可以直接软链接或复制 `knowledge-wiki/` 的内容
-- 保持 Markdown 源文件不变
-- 网站只是更漂亮的展示层
+1. 在 `docs/` 对应目录下创建新的 `.md` 文件（可参考 `docs/templates/`）。
+2. 在 `docs/changelog.md` 中记录变更。
+3. 提交代码到 Git 仓库。
+
+## 部署
+
+推荐部署至 **GitHub Pages** 或 **Vercel**。项目已配置好 `.gitignore` 和 `cleanUrls`，可实现无缝自动化部署。

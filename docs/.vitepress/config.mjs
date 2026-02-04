@@ -10,25 +10,48 @@ export default defineConfig({
     nav: [
       { text: '首页', link: '/' },
       { text: '变更日志', link: '/changelog' },
+      { text: '迭代', link: '/iterations/' },
       { text: '脚本', link: '/scripts/' },
       { text: '功能', link: '/features/' },
-      { text: 'Bug修复', link: '/bugfixes/' },
+      { text: '模板', link: '/templates/' },
     ],
 
     // 侧边栏
     sidebar: {
+      '/iterations/': [
+        {
+          text: '系统迭代',
+          items: [
+            { text: '概览', link: '/iterations/' },
+            { text: '知识库方案对比', link: '/iterations/wiki-solution-comparison' },
+            { text: '知识库系统搭建', link: '/iterations/knowledge-wiki-system' },
+            { text: '现代化与架构合并', link: '/iterations/wiki-modernization-and-merge' },
+          ]
+        }
+      ],
       '/scripts/': [
         {
-          text: '脚本',
+          text: '脚本工具',
           items: [
             { text: '概览', link: '/scripts/' },
+            { text: '301 重定向管理', link: '/scripts/301-redirect-management' },
             { text: 'Clash Verge 智能分流', link: '/scripts/clash-verge-proxy-rules' },
+            { text: 'deploy & lookup 封装', link: '/scripts/deploy-lookup-wrapper' },
+          ]
+        }
+      ],
+      '/templates/': [
+        {
+          text: '内容模板',
+          items: [
+            { text: '脚本模板', link: '/templates/script' },
+            { text: 'Bug修复模板', link: '/templates/bugfix' },
           ]
         }
       ],
       '/features/': [
         {
-          text: '功能',
+          text: '功能开发',
           items: [
             { text: '概览', link: '/features/' },
           ]
@@ -36,7 +59,7 @@ export default defineConfig({
       ],
       '/bugfixes/': [
         {
-          text: 'Bug修复',
+          text: '问题修复',
           items: [
             { text: '概览', link: '/bugfixes/' },
           ]
@@ -52,7 +75,24 @@ export default defineConfig({
 
     // 搜索
     search: {
-      provider: 'local'
+      provider: 'local',
+      options: {
+        translations: {
+          button: {
+            buttonText: '搜索文档',
+            buttonAriaLabel: '搜索文档'
+          },
+          modal: {
+            noResultsText: '无法找到相关结果',
+            resetButtonTitle: '清除查询条件',
+            footer: {
+              selectText: '选择',
+              navigateText: '切换',
+              closeText: '关闭'
+            }
+          }
+        }
+      }
     },
 
     // 社交链接
@@ -102,6 +142,7 @@ export default defineConfig({
   // Markdown 配置
   markdown: {
     lineNumbers: true,
+    theme: 'one-dark-pro',
     config: (md) => {
       // 自定义 Markdown 插件
     }
@@ -110,6 +151,6 @@ export default defineConfig({
   // 头部配置
   head: [
     ['link', { rel: 'icon', href: '/favicon.ico' }],
-    ['meta', { name: 'theme-color', content: '#5f67ee' }],
+    ['meta', { name: 'theme-color', content: '#3a86ff' }],
   ]
 })
