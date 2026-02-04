@@ -4,6 +4,48 @@
 
 ## 2026-02-04
 
+### 配置文件迁移指南
+- **类型**: feature
+- **摘要**: 创建一键迁移脚本，实现 OpenCode 配置在多电脑间同步
+- **文档**: [config-migration.md](./config-migration.md)
+- **状态**: 🟢 Active
+- **Last Modified**: 2026-02-04 20:36
+
+### Kimi Free Rate Limit 问题解决
+- **类型**: feature
+- **摘要**: 为 Kimi Free 添加 fallback 机制，解决限流时的自动切换问题
+- **文档**: [kimi-free-rate-limit.md](./kimi-free-rate-limit.md)
+- **状态**: 🟢 Active
+- **Last Modified**: 2026-02-04 20:30
+
+### Agent 调度机制说明
+- **类型**: feature
+- **摘要**: 详细说明 Sisyphus/Hephaestus/Prometheus/Atlas 等 Agent 的调度逻辑
+- **文档**: [agent-scheduling.md](./agent-scheduling.md)
+- **状态**: 🟢 Active
+- **Last Modified**: 2026-02-04 20:20
+
+### 模型选择指南
+- **类型**: feature
+- **摘要**: 根据实测结果整理各模型专长，为不同场景推荐最优选型
+- **文档**: [model-selection-guide.md](./model-selection-guide.md)
+- **状态**: 🟢 Active
+- **Last Modified**: 2026-02-04 20:10
+
+### 多模型配置策略
+- **类型**: feature
+- **摘要**: 制定付费模型处理核心任务、免费模型处理日常任务的混合使用策略
+- **文档**: [oh-my-opencode-model-strategy.md](./oh-my-opencode-model-strategy.md)
+- **状态**: 🟢 Active
+- **Last Modified**: 2026-02-04 20:05
+
+### oh-my-opencode 安装指南
+- **类型**: feature
+- **摘要**: 安装 oh-my-opencode 插件并完成基础配置
+- **文档**: [oh-my-opencode-install.md](./oh-my-opencode-install.md)
+- **状态**: 🟢 Active
+- **Last Modified**: 2026-02-04 20:00
+
 ### 变更日志格式规范升级
 - **类型**: 流程优化
 - **摘要**: 重构 Changelog 记录格式，确立“类型-摘要-文档-状态-时间”的标准顺序

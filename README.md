@@ -7,11 +7,26 @@
 > 记录所以与AI共同迭代的过程...
 
 ## 🌐 在线预览
+
 **访问地址**: [https://ctrixin.github.io/xin_wiki/](https://ctrixin.github.io/xin_wiki/)
 
-## 项目概述
-本项目是一个单仓库架构的个人知识库系统。它将核心 Markdown 内容与基于 VitePress 的展示层完美结合，通过极客风的深色主题提供极致的阅读体验。
+## OpenCode + oh-my-opencode 专题
 
+### 快速开始
+
+| 文档 | 说明 |
+|------|------|
+| [oh-my-opencode 安装指南](./docs/oh-my-opencode-install.md) | 安装和基础配置 |
+| [多模型配置策略](./docs/oh-my-opencode-model-strategy.md) | 付费+免费混合使用 |
+| [模型选择指南](./docs/model-selection-guide.md) | 各模型专长和选型 |
+
+### 进阶使用
+
+| 文档 | 说明 |
+|------|------|
+| [Agent 调度机制](./docs/agent-scheduling.md) | 理解调度逻辑 |
+| [Kimi Free Rate Limit 处理](./docs/kimi-free-rate-limit.md) | 解决限流问题 |
+| [配置文件迁移](./docs/config-migration.md) | 多电脑同步配置 |
 
 ## 常用操作
 
@@ -39,6 +54,7 @@ npm run sync-skills
 ```
 
 ## 目录结构
+
 ```text
 .
 ├── docs/                   # 核心内容 (Markdown)
@@ -52,5 +68,6 @@ npm run sync-skills
 ```
 
 ## 部署信息
+
 本项目通过 **GitHub Actions** 自动部署至 **GitHub Pages**。
 配置文件位于 `.github/workflows/deploy.yml`。
