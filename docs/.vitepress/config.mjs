@@ -136,7 +136,7 @@ export default defineConfig({
   },
 
   // 生成配置
-  base: '/',
+  base: '/xin_wiki/',
   cleanUrls: true,
 
   // Markdown 配置
