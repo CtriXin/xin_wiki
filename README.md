@@ -62,7 +62,8 @@ npm run sync-skills
 │   ├── iterations/         # 系统迭代记录
 │   ├── templates/          # 内容模板
 │   └── .vitepress/         # 站点配置与主题
-├── .claude-skill.md        # AI 协作指南
+├── skills/                 # AI 技能包
+│   └── knowledge-wiki/     # 核心协作技能 (指南 + 模板)
 ├── package.json
 └── README.md
 ```
