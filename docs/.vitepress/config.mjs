@@ -9,9 +9,9 @@ export default defineConfig({
     // 导航栏 - 重排顺序，移除模板
     nav: [
       { text: '首页', link: '/' },
-      { text: '迭代', link: '/iterations/' },
       { text: '脚本', link: '/scripts/' },
       { text: '功能', link: '/features/' },
+      { text: '迭代', link: '/iterations/' },
       { text: '变更日志', link: '/changelog' },
     ],
 
