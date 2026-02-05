@@ -37,7 +37,7 @@ export default defineConfig({
           items: [
             { text: '概览', link: '/scripts/' },
             { text: '301 重定向管理', link: '/scripts/301-redirect-management' },
-            { text: 'Clash Verge 智能分流', link: '/scripts/clash-verge-proxy-rules' },
+            { text: 'Clash分流配置+命令行代理', link: '/scripts/clash-verge-proxy-rules' },
             { text: 'deploy & lookup 封装', link: '/scripts/deploy-lookup-wrapper' },
           ]
         }
@@ -47,6 +47,16 @@ export default defineConfig({
           text: '功能开发',
           items: [
             { text: '概览', link: '/features/' },
+          ]
+        },
+        {
+          text: '域名配置工具',
+          collapsed: false,
+          items: [
+            { text: '工具概览', link: '/features/domain-tool/' },
+            { text: '架构与原理', link: '/features/domain-tool/architecture' },
+            { text: 'Excel 规范', link: '/features/domain-tool/data-spec' },
+            { text: '渲染系统', link: '/features/domain-tool/rendering' },
           ]
         }
       ],

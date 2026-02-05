@@ -42,7 +42,7 @@ deploy() {
     echo "Usage: deploy <server-name>"
     echo ""
     echo "Examples:"
-    echo "  deploy ptc-301-gb"
+    echo "  deploy ptc-xxx"
     echo ""
     echo "Available servers:"
     lookup list 2>/dev/null || echo "  (run 'lookup' to see all)"
@@ -56,7 +56,8 @@ deploy() {
 
 ```bash
 lookup() {
-  if [[ $# -lt 1 ]]; then
+  # 支持显式查看帮助
+  if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     echo "Usage: lookup <command> [args]"
     echo ""
     echo "Commands:"
@@ -64,8 +65,10 @@ lookup() {
     echo "  lookup domain <service>  # 查询服务域名"
     echo "  lookup ip <service>      # 查询服务IP"
     echo "  lookup service <domain>  # 根据域名查服务"
-    return 1
+    return 0
   fi
+
+  # 无参数时直接进入交互模式，有参数时透传给原命令
   command lookup "$@"
 }
 ```
@@ -87,8 +90,12 @@ deploy ptc-301-gb
 
 ### 查询服务
 ```bash
-# 直接输入 lookup 查看帮助
+# 直接输入 lookup 进入交互模式
 lookup
+# -> 进入 SCMP 服务/域名快速查询工具
+
+# 输入 lookup -h 查看帮助
+lookup -h
 # 输出所有可用子命令说明...
 
 # 查询具体服务
