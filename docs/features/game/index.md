@@ -1,16 +1,20 @@
-# 🎮 数学飞机大战
+# 🎮 数学飞机大战 V2
 
 > 从教育工具转型为"让孩子主动想玩的轻度Roguelike射击游戏"
 
 ## 🚀 开始游戏
 
-::: tip 点击开始全屏游戏
-<a href="/xin_wiki/game-full.html" target="_blank" style="display:inline-block; background:linear-gradient(145deg, #ff6b6b, #cc5555); color:#fff; padding:15px 40px; font-size:20px; border-radius:30px; text-decoration:none; box-shadow:0 6px 0 #992222; margin:10px 0;">
-  🎮 开始游戏（全屏）
+::: tip V2 狂暴进化版 - 全新升级!
+<a href="/xin_wiki/game-v2.html" target="_blank" style="display:inline-block; background:linear-gradient(145deg, #ff6b6b, #cc5555); color:#fff; padding:15px 50px; font-size:24px; border-radius:35px; text-decoration:none; box-shadow:0 6px 0 #992222, 0 0 30px rgba(255,107,107,0.4); margin:10px 0;">
+  🔥 开始游戏 V2
 </a>
+
+**V2 新特性**: Boss战 | 商店系统 | 成就勋章 | 飞机进化 | 动态难度
 :::
 
 **手机用户**：建议将手机横屏获得最佳体验
+
+[旧版本 V1 →](/xin_wiki/game-full.html)
 
 ---
 

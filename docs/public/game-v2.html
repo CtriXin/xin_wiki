@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>数学飞机大战 V2 - 狂暴进化</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <link rel="stylesheet" href="./game/game-v2.css">
+</head>
+<body>
+  <!-- 返回按钮 -->
+  <a href="/xin_wiki/features/game/" class="back-btn">← 返回</a>
+  
+  <!-- 触摸控制区域 -->
+  <div id="touch-left"
+    style="position:absolute; left:0; top:100px; width:35%; height:60%; z-index:5; display:flex; align-items:center; justify-content:center; pointer-events:auto;">
+    <div class="touch-hint"
+      style="color:rgba(255,215,0,0.3); font-size:24px; font-weight:bold; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px;">
+      <span style="font-size:36px;">←</span>
+      <span style="font-size:12px;">按住移动</span>
+    </div>
+  </div>
+  <div id="touch-right"
+    style="position:absolute; right:0; top:100px; width:35%; height:60%; z-index:5; display:flex; align-items:center; justify-content:center; pointer-events:auto;">
+    <div class="touch-hint"
+      style="color:rgba(255,215,0,0.3); font-size:24px; font-weight:bold; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px;">
+      <span style="font-size:36px;">→</span>
+      <span style="font-size:12px;">按住移动</span>
+    </div>
+  </div>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- UI层 -->
+  <div id="ui-layer">
+    <!-- HUD -->
+    <div id="hud">
+      <div class="hud-item red">关卡: <span id="level">1</span></div>
+      <div class="hud-item red">生命: <span id="lives">❤️❤️❤️</span></div>
+      <div class="hud-item gold">🪙 <span id="coins">0</span></div>
+      <div class="hud-item cyan clickable" id="aim-toggle" onclick="toggleAimMode()">
+        瞄准: <span id="aim-mode">手动</span>
+      </div>
+      <div class="hud-item cyan clickable" id="sound-toggle" onclick="toggleSound()">
+        <span id="sound-icon">🔊</span> <span id="sound-text">开启</span>
+      </div>
+      <div class="hud-item gold clickable" onclick="toggleShop()">
+        🛒 商店
+      </div>
+    </div>
+
+    <!-- Boss HUD -->
+    <div id="boss-hud">
+      <div class="boss-name">年兽 Boss</div>
+      <div class="boss-hp-bar">
+        <div class="boss-hp-fill" style="width: 100%"></div>
+      </div>
+    </div>
+
+    <!-- 连击显示 -->
+    <div id="combo">
+      连击 x<span id="combo-count">0</span>! 
+      <span id="combo-text" style="color:#ffd700"></span>
+    </div>
+
+    <!-- 狂暴指示器 -->
+    <div id="fever-indicator">🔥 FEVER! 🔥</div>
+
+    <!-- Boss警告 -->
+    <div id="boss-warning">⚠️ BOSS来袭! ⚠️</div>
+
+    <!-- 彩蛋/提示 -->
+    <div id="easter-egg">🧧 春节彩蛋！🧧</div>
+
+    <!-- 成就弹出 -->
+    <div id="achievement-popup">
+      <span class="achievement-icon">🏆</span>
+      <div class="achievement-text">
+        <div class="achievement-title">成就解锁!</div>
+        <div class="achievement-name">初战告捷</div>
+      </div>
+    </div>
+
+    <!-- 数学题目 -->
+    <div id="math-panel">
+      <div id="question">点击开始</div>
+      <div id="answer-display"></div>
+    </div>
+
+    <!-- 数字键盘 -->
+    <div id="keypad">
+      <div class="key" data-num="1">1</div>
+      <div class="key" data-num="2">2</div>
+      <div class="key" data-num="3">3</div>
+      <div class="key" data-num="4">4</div>
+      <div class="key" data-num="5">5</div>
+      <div class="key" data-num="6">6</div>
+      <div class="key" data-num="7">7</div>
+      <div class="key" data-num="8">8</div>
+      <div class="key" data-num="9">9</div>
+      <div class="key" data-num="0">0</div>
+      <div class="key clear" data-action="clear">清除</div>
+    </div>
+  </div>
+
+  <!-- 特效层 -->
+  <div id="nuke-flash" class="nuke-flash"></div>
+  <div class="freeze-overlay"></div>
+  <div class="shield-overlay"></div>
+
+  <!-- 商店面板 -->
+  <div id="shop-panel">
+    <div class="shop-title">🛒 道具商店</div>
+    <div class="shop-coins">🪙 0</div>
+    <div id="shop-list">
+      <!-- 动态生成 -->
+    </div>
+    <button class="shop-close" onclick="toggleShop()">关闭商店</button>
+  </div>
+
+  <!-- 开始/结束画面 -->
+  <div id="overlay">
+    <h1>🧨 数学飞机大战 V2</h1>
+    <div class="subtitle">狂暴进化版</div>
+    <div class="features">
+      <p><span>🔥 狂暴模式:</span> 连击x3加速 x5穿透</p>
+      <p><span>👑 Boss战:</span> 每5关挑战年兽</p>
+      <p><span>🛒 道具商店:</span> 冻结/炸弹/护盾</p>
+      <p><span>🏆 成就系统:</span> 解锁勋章</p>
+      <p><span>✈️ 飞机进化:</span> 速度/火力型</p>
+    </div>
+    
+    <!-- 飞机选择 -->
+    <div style="margin:15px 0;">
+      <div style="color:#888;font-size:12px;margin-bottom:8px;">选择机型:</div>
+      <div class="plane-selector">
+        <div class="plane-option selected" onclick="selectPlane('balanced', this)">
+          <span class="plane-icon">✈️</span>
+          <span class="plane-name">均衡型</span>
+        </div>
+        <div class="plane-option" onclick="selectPlane('speed', this)">
+          <span class="plane-icon">🚀</span>
+          <span class="plane-name">速度型</span>
+        </div>
+        <div class="plane-option" onclick="selectPlane('power', this)">
+          <span class="plane-icon">🛩️</span>
+          <span class="plane-name">火力型</span>
+        </div>
+      </div>
+    </div>
+    
+    <button class="btn" onclick="startGame()">开始游戏</button>
+    
+    <div class="achievements-showcase" id="menu-achievements">
+      <span class="achievement-badge" title="初战告捷">🎯</span>
+      <span class="achievement-badge" title="连击大师">🔥</span>
+      <span class="achievement-badge" title="狂暴模式">💀</span>
+      <span class="achievement-badge" title="小富翁">💰</span>
+      <span class="achievement-badge" title="Boss杀手">👑</span>
+      <span class="achievement-badge" title="生存专家">⭐</span>
+      <span class="achievement-badge" title="数学巫师">🧙</span>
+    </div>
+  </div>
+
+  <script src="./game/game-v2.js"></script>
+  <script>
+    // 飞机选择
+    function selectPlane(type, el) {
+      GameState.planeType = type;
+      document.querySelectorAll('.plane-option').forEach(opt => opt.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+    
+    // 加载成就显示
+    function loadMenuAchievements() {
+      const saved = localStorage.getItem('math-plane-achievements');
+      if (saved) {
+        const unlocked = JSON.parse(saved);
+        const badges = document.querySelectorAll('#menu-achievements .achievement-badge');
+        const ids = ['firstBlood', 'combo5', 'combo10', 'rich', 'bossSlayer', 'survivor', 'mathWizard'];
+        ids.forEach((id, i) => {
+          if (unlocked.includes(id)) {
+            badges[i].classList.add('unlocked');
+          }
+        });
+      }
+    }
+    
+    loadMenuAchievements();
+  </script>
+</body>
+</html>

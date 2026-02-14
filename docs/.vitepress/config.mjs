@@ -9,7 +9,7 @@ export default defineConfig({
     // 导航栏 - 重排顺序，移除模板
     nav: [
       { text: '首页', link: '/' },
-      { text: '🎮 开始游戏', link: '/game-full.html', target: '_blank' },
+      { text: '🔥 游戏 V2', link: '/game-v2.html', target: '_blank' },
       { text: '脚本', link: '/scripts/' },
       { text: '功能', link: '/features/' },
       { text: '迭代', link: '/iterations/' },
