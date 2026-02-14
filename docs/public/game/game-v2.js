@@ -1,15 +1,15 @@
 /**
- * 数学飞机大战 V2 - 狂暴进化版
- * 包含：Boss战、商店、技能、成就、飞机进化系统
+ * 数学飞机大战 V2.5 - 全面优化版
+ * 优化: 难度曲线、生命系统、UI交互、游戏体验
  */
 
 // ==================== 游戏配置 ====================
 const CONFIG = {
   width: window.innerWidth,
   height: window.innerHeight,
-  planeY: window.innerHeight - 200,
-  bulletSpeed: 8,
-  gravity: 0.05,
+  planeY: window.innerHeight - 180,
+  bulletSpeed: 10,
+  gravity: 0.03, // 降低重力，方块下落更慢
   colors: {
     plane: '#ff4444',
     planeWindow: '#ffd700',
@@ -24,7 +24,8 @@ const CONFIG = {
 const GameState = {
   level: 1,
   attempts: 0,
-  lives: 3,
+  lives: 5, // 增加初始生命
+  maxLives: 5,
   combo: 0,
   coins: 0,
   maxCombo: 0,
@@ -34,15 +35,17 @@ const GameState = {
   isGameOver: false,
   isPaused: true,
   isShopOpen: false,
+  isInputFocused: false, // 新增：输入焦点状态
   planeX: CONFIG.width / 2,
-  planeType: 'balanced', // balanced, speed, power
+  planeType: 'balanced',
   bullets: [],
   blocks: [],
   particles: [],
   damageNumbers: [],
+  floatingTexts: [], // 新增：飘字效果
   upgradeLevel: 0,
   fireInterval: null,
-  autoAim: false,
+  autoAim: true, // 默认开启自动瞄准，降低难度
   submitTimer: null,
   soundEnabled: true,
   isFever: false,
@@ -52,7 +55,8 @@ const GameState = {
   skills: {
     freeze: { active: false, duration: 0 },
     shield: { active: false, hits: 0 },
-    bomb: { count: 0 }
+    bomb: { count: 0 },
+    slowMotion: { active: false, duration: 0 } // 新增：子弹时间
   },
   // Boss状态
   boss: null,
@@ -62,7 +66,14 @@ const GameState = {
     startTime: null,
     correctAnswers: 0,
     wrongAnswers: 0,
-    bossKilled: 0
+    bossKilled: 0,
+    blocksLost: 0 // 新增：漏掉的方块数
+  },
+  // 难度控制
+  difficulty: {
+    blockFallSpeed: 1, // 基础下落速度倍率
+    spawnRate: 1,
+    blockHP: 1
   }
 };
 
@@ -74,15 +85,17 @@ const Achievements = {
   rich: { id: 'rich', name: '小富翁', desc: '累积100金币', icon: '💰', unlocked: false },
   bossSlayer: { id: 'bossSlayer', name: 'Boss杀手', desc: '击败第一个Boss', icon: '👑', unlocked: false },
   survivor: { id: 'survivor', name: '生存专家', desc: '通过第10关', icon: '⭐', unlocked: false },
-  mathWizard: { id: 'mathWizard', name: '数学巫师', desc: '答对50题', icon: '🧙', unlocked: false }
+  mathWizard: { id: 'mathWizard', name: '数学巫师', desc: '答对50题', icon: '🧙', unlocked: false },
+  perfect: { id: 'perfect', name: '完美通关', desc: '不损失生命通过第5关', icon: '💎', unlocked: false }
 };
 
 // ==================== 商店商品 ====================
 const ShopItems = [
   { id: 'freeze', name: '时间冻结', desc: '暂停所有方块3秒', icon: '❄️', price: 30, type: 'instant' },
   { id: 'bomb', name: '全屏炸弹', desc: '消灭所有方块', icon: '💣', price: 50, type: 'item' },
-  { id: 'shield', name: '能量护盾', desc: '抵挡1次伤害', icon: '🛡️', price: 40, type: 'buff' },
-  { id: 'heal', name: '生命恢复', desc: '恢复1点生命', icon: '❤️', price: 60, type: 'instant' },
+  { id: 'shield', name: '能量护盾', desc: '抵挡2次伤害', icon: '🛡️', price: 40, type: 'buff' },
+  { id: 'heal', name: '生命恢复', desc: '恢复2点生命', icon: '❤️', price: 50, type: 'instant' },
+  { id: 'slow', name: '子弹时间', desc: '5秒内时间变慢', icon: '⏱️', price: 35, type: 'instant' },
   { id: 'penetrate', name: '穿透弹夹', desc: '下轮子弹全穿透', icon: '🔫', price: 25, type: 'buff' }
 ];
 
@@ -94,7 +107,7 @@ const Engine = Matter.Engine,
   Body = Matter.Body;
 
 const engine = Engine.create();
-engine.gravity.y = CONFIG.gravity;
+engine.gravity.y = CONFIG.gravity; // 使用降低的重力
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -107,82 +120,95 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playSound(type) {
   if (!GameState.soundEnabled) return;
   
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
 
-  switch(type) {
-    case 'shoot':
-      osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.1);
-      break;
-    case 'hit':
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(200, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.1);
-      break;
-    case 'correct':
-      [523.25, 659.25, 783.99].forEach((freq, i) => {
-        const o = audioCtx.createOscillator();
-        const g = audioCtx.createGain();
-        o.connect(g);
-        g.connect(audioCtx.destination);
-        o.frequency.value = freq;
-        g.gain.setValueAtTime(0.1, audioCtx.currentTime + i * 0.1);
-        g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.1 + 0.2);
-        o.start(audioCtx.currentTime + i * 0.1);
-        o.stop(audioCtx.currentTime + i * 0.1 + 0.2);
-      });
-      break;
-    case 'wrong':
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
-      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.3);
-      break;
-    case 'nuke':
-      [329.63, 493.88, 659.25].forEach((freq, i) => {
-        const o = audioCtx.createOscillator();
-        const g = audioCtx.createGain();
-        o.connect(g);
-        g.connect(audioCtx.destination);
-        o.frequency.value = freq;
-        g.gain.setValueAtTime(0.15, audioCtx.currentTime + i * 0.08);
-        g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.08 + 0.4);
-        o.start(audioCtx.currentTime + i * 0.08);
-        o.stop(audioCtx.currentTime + i * 0.08 + 0.4);
-      });
-      break;
-    case 'coin':
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(1800, audioCtx.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.1);
-      break;
-    case 'bossWarning':
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(100, audioCtx.currentTime);
-      osc.frequency.linearRampToValueAtTime(300, audioCtx.currentTime + 0.5);
-      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.5);
-      break;
+    switch(type) {
+      case 'shoot':
+        osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.08);
+        break;
+      case 'hit':
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+        break;
+      case 'correct':
+        [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.connect(g);
+          g.connect(audioCtx.destination);
+          o.frequency.value = freq;
+          g.gain.setValueAtTime(0.08, audioCtx.currentTime + i * 0.08);
+          g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.08 + 0.15);
+          o.start(audioCtx.currentTime + i * 0.08);
+          o.stop(audioCtx.currentTime + i * 0.08 + 0.15);
+        });
+        break;
+      case 'wrong':
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+        break;
+      case 'nuke':
+        [329.63, 493.88, 659.25, 880].forEach((freq, i) => {
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.connect(g);
+          g.connect(audioCtx.destination);
+          o.frequency.value = freq;
+          g.gain.setValueAtTime(0.12, audioCtx.currentTime + i * 0.06);
+          g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.06 + 0.3);
+          o.start(audioCtx.currentTime + i * 0.06);
+          o.stop(audioCtx.currentTime + i * 0.06 + 0.3);
+        });
+        break;
+      case 'coin':
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1800, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+        break;
+      case 'lifeLost':
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.5);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.5);
+        break;
+      case 'bossWarning':
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(250, audioCtx.currentTime + 0.5);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.5);
+        break;
+    }
+  } catch(e) {
+    console.log('Audio error:', e);
   }
 }
 
@@ -198,6 +224,7 @@ function unlockAchievement(achievementId) {
 
 function showAchievementPopup(achievement) {
   const popup = document.getElementById('achievement-popup');
+  if (!popup) return;
   popup.querySelector('.achievement-icon').textContent = achievement.icon;
   popup.querySelector('.achievement-name').textContent = achievement.name;
   popup.classList.add('show');
@@ -239,9 +266,11 @@ function toggleShop() {
 
 function renderShop() {
   const coinsEl = document.querySelector('.shop-coins');
-  coinsEl.innerHTML = `<span class="coin-icon">🪙</span> ${GameState.coins}`;
+  if (coinsEl) coinsEl.innerHTML = `<span class="coin-icon">🪙</span> ${GameState.coins}`;
   
   const list = document.getElementById('shop-list');
+  if (!list) return;
+  
   list.innerHTML = '';
   
   ShopItems.forEach(item => {
@@ -275,17 +304,23 @@ function buyItem(item) {
       break;
     case 'bomb':
       GameState.skills.bomb.count++;
+      showFloatingText(CONFIG.width/2, CONFIG.height/2, '+1 💣', '#ff6b6b');
       break;
     case 'shield':
       activateShield();
       break;
     case 'heal':
-      if (GameState.lives < 5) {
-        GameState.lives++;
+      if (GameState.lives < GameState.maxLives) {
+        GameState.lives = Math.min(GameState.lives + 2, GameState.maxLives);
         updateHUD();
+        showFloatingText(CONFIG.width/2, 100, '+❤️❤️', '#ff4444');
       } else {
-        GameState.coins += item.price; //  refund
+        GameState.coins += item.price;
+        showFloatingText(CONFIG.width/2, CONFIG.height/2, '生命已满!', '#888');
       }
+      break;
+    case 'slow':
+      activateSlowMotion();
       break;
     case 'penetrate':
       GameState.isPenetrate = true;
@@ -299,10 +334,9 @@ function buyItem(item) {
 
 function activateFreeze() {
   GameState.skills.freeze.active = true;
-  GameState.skills.freeze.duration = 180; // 3 seconds at 60fps
-  document.querySelector('.freeze-overlay').classList.add('show');
+  GameState.skills.freeze.duration = 180;
+  document.querySelector('.freeze-overlay')?.classList.add('show');
   
-  // Freeze all blocks
   GameState.blocks.forEach(block => {
     block.velocityBeforeFreeze = { ...block.velocity };
     Body.setVelocity(block, { x: 0, y: 0 });
@@ -311,8 +345,7 @@ function activateFreeze() {
   
   setTimeout(() => {
     GameState.skills.freeze.active = false;
-    document.querySelector('.freeze-overlay').classList.remove('show');
-    // Restore velocities
+    document.querySelector('.freeze-overlay')?.classList.remove('show');
     GameState.blocks.forEach(block => {
       if (block.velocityBeforeFreeze) {
         Body.setVelocity(block, block.velocityBeforeFreeze);
@@ -323,17 +356,32 @@ function activateFreeze() {
 
 function activateShield() {
   GameState.skills.shield.active = true;
-  GameState.skills.shield.hits = 1;
-  document.querySelector('.shield-overlay').classList.add('show');
+  GameState.skills.shield.hits = 2;
+  document.querySelector('.shield-overlay')?.classList.add('show');
+}
+
+function activateSlowMotion() {
+  GameState.skills.slowMotion.active = true;
+  GameState.skills.slowMotion.duration = 300; // 5 seconds
+  engine.timing.timeScale = 0.3; // 时间变慢到30%
+  
+  // 视觉提示
+  document.body.style.filter = 'hue-rotate(180deg)';
+  
+  setTimeout(() => {
+    GameState.skills.slowMotion.active = false;
+    engine.timing.timeScale = 1;
+    document.body.style.filter = '';
+  }, 5000);
 }
 
 function useBomb() {
   if (GameState.skills.bomb.count <= 0) return;
   GameState.skills.bomb.count--;
   
-  // Destroy all blocks
   GameState.blocks.forEach(block => {
     createParticles(block.position.x, block.position.y, '#ff6b6b', 15);
+    awardCoins(block, true);
     Composite.remove(engine.world, block);
   });
   GameState.blocks = [];
@@ -342,22 +390,29 @@ function useBomb() {
   playSound('nuke');
 }
 
+// ==================== 飘字效果 ====================
+function showFloatingText(x, y, text, color) {
+  GameState.floatingTexts.push({
+    x, y, text, color,
+    life: 60,
+    vy: -2
+  });
+}
+
 // ==================== Boss系统 ====================
 class Boss {
   constructor(level) {
     this.level = level;
-    this.maxHp = level * 10;
+    this.maxHp = level * 8;
     this.hp = this.maxHp;
     this.x = CONFIG.width / 2;
-    this.y = 120;
-    this.width = 120;
-    this.height = 80;
+    this.y = 100;
+    this.width = 100;
+    this.height = 70;
     this.phase = 0;
     this.attackTimer = 0;
-    this.moveDirection = 1;
-    this.speed = 2 + level * 0.3;
+    this.flash = 0;
     
-    // Create boss body
     this.body = Bodies.rectangle(this.x, this.y, this.width, this.height, {
       isStatic: true,
       label: 'boss',
@@ -369,30 +424,44 @@ class Boss {
   }
   
   update() {
-    // Sine wave movement
-    this.phase += 0.02;
-    this.x = CONFIG.width / 2 + Math.sin(this.phase) * 150;
+    this.phase += 0.015;
+    this.x = CONFIG.width / 2 + Math.sin(this.phase) * 120;
     Body.setPosition(this.body, { x: this.x, y: this.y });
     
-    // Attack every 5 seconds
     this.attackTimer++;
-    if (this.attackTimer >= 300) { // 5 seconds at 60fps
+    if (this.attackTimer >= 360) {
       this.attack();
       this.attackTimer = 0;
     }
   }
   
   attack() {
-    // Spawn a math missile
-    const question = generateBossQuestion();
-    createMathMissile(this.x, this.y + 50, question);
+    const a = Math.floor(Math.random() * 15) + 5;
+    const b = Math.floor(Math.random() * 15) + 5;
+    const ops = ['+', '-', '×'];
+    const op = ops[Math.floor(Math.random() * ops.length)];
+    let answer;
+    switch(op) {
+      case '+': answer = a + b; break;
+      case '-': answer = a - b; break;
+      case '×': answer = a * b; break;
+    }
+    
+    const egg = document.getElementById('easter-egg');
+    if (egg) {
+      egg.innerHTML = `<div style="font-size:18px">Boss攻击!</div><div style="font-size:26px;color:#ff00ff">${a} ${op} ${b} = ?</div><div style="font-size:12px">快算出答案!</div>`;
+      egg.style.color = '#ff00ff';
+      egg.classList.add('show');
+      setTimeout(() => {
+        egg.classList.remove('show');
+        egg.style.color = '#ffd700';
+      }, 4000);
+    }
   }
   
   takeDamage(damage = 1) {
     this.hp -= damage;
-    createDamageNumber(this.x, this.y - 50, damage);
-    
-    // Flash effect
+    createDamageNumber(this.x, this.y - 40, damage);
     this.flash = 10;
     
     if (this.hp <= 0) {
@@ -402,11 +471,9 @@ class Boss {
   }
   
   die() {
-    // Explosion effect
-    createParticles(this.x, this.y, '#ffd700', 50);
+    createParticles(this.x, this.y, '#ffd700', 60);
     
-    // Reward
-    GameState.coins += 50;
+    GameState.coins += 50 + this.level * 10;
     GameState.stats.bossKilled++;
     unlockAchievement('bossSlayer');
     
@@ -414,17 +481,16 @@ class Boss {
     GameState.boss = null;
     GameState.isBossLevel = false;
     
-    // Hide boss HUD
-    document.getElementById('boss-hud').classList.remove('show');
+    document.getElementById('boss-hud')?.classList.remove('show');
     
-    // Spawn victory coins
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 15; i++) {
       setTimeout(() => {
-        createCoinFloat(
+        showFloatingText(
           CONFIG.width / 2 + (Math.random() - 0.5) * 200,
-          CONFIG.height / 2 + (Math.random() - 0.5) * 100
+          CONFIG.height / 2 + (Math.random() - 0.5) * 100,
+          '+🪙', '#ffd700'
         );
-      }, i * 100);
+      }, i * 80);
     }
   }
   
@@ -432,240 +498,278 @@ class Boss {
     ctx.save();
     ctx.translate(this.x, this.y);
     
-    // Flash when hit
     if (this.flash > 0) {
-      ctx.globalAlpha = 0.5;
+      ctx.globalAlpha = 0.4;
       this.flash--;
     }
     
-    // Boss body (年兽)
+    // Boss body
     ctx.fillStyle = '#8B0000';
     ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
     
     // Eyes
-    const eyeOffset = Math.sin(this.phase * 2) * 5;
+    const eyeOffset = Math.sin(this.phase * 2) * 4;
     ctx.fillStyle = '#ff0000';
     ctx.beginPath();
-    ctx.arc(-30 + eyeOffset, -10, 15, 0, Math.PI * 2);
-    ctx.arc(30 + eyeOffset, -10, 15, 0, Math.PI * 2);
+    ctx.arc(-25 + eyeOffset, -5, 12, 0, Math.PI * 2);
+    ctx.arc(25 + eyeOffset, -5, 12, 0, Math.PI * 2);
     ctx.fill();
     
-    // Pupils
     ctx.fillStyle = '#000';
     ctx.beginPath();
-    ctx.arc(-30 + eyeOffset, -10, 5, 0, Math.PI * 2);
-    ctx.arc(30 + eyeOffset, -10, 5, 0, Math.PI * 2);
+    ctx.arc(-25 + eyeOffset, -5, 4, 0, Math.PI * 2);
+    ctx.arc(25 + eyeOffset, -5, 4, 0, Math.PI * 2);
     ctx.fill();
     
     // Horns
     ctx.fillStyle = '#ffd700';
     ctx.beginPath();
-    ctx.moveTo(-50, -40);
-    ctx.lineTo(-60, -80);
-    ctx.lineTo(-30, -40);
+    ctx.moveTo(-40, -35);
+    ctx.lineTo(-50, -70);
+    ctx.lineTo(-25, -35);
     ctx.fill();
     ctx.beginPath();
-    ctx.moveTo(50, -40);
-    ctx.lineTo(60, -80);
-    ctx.lineTo(30, -40);
+    ctx.moveTo(40, -35);
+    ctx.lineTo(50, -70);
+    ctx.lineTo(25, -35);
     ctx.fill();
     
-    // HP bar above boss
+    // HP bar
     const hpPercent = this.hp / this.maxHp;
     ctx.fillStyle = '#000';
-    ctx.fillRect(-60, -70, 120, 10);
+    ctx.fillRect(-50, -60, 100, 8);
     ctx.fillStyle = hpPercent > 0.5 ? '#00ff00' : hpPercent > 0.25 ? '#ffff00' : '#ff0000';
-    ctx.fillRect(-58, -68, 116 * hpPercent, 6);
+    ctx.fillRect(-48, -58, 96 * hpPercent, 4);
     
     ctx.restore();
   }
-}
-
-function generateBossQuestion() {
-  // Harder questions for boss
-  const a = Math.floor(Math.random() * 20) + 10;
-  const b = Math.floor(Math.random() * 20) + 5;
-  return { text: `${a} + ${b} = ?`, answer: a + b };
-}
-
-function createMathMissile(x, y, question) {
-  // Visual representation of boss attack
-  const missile = Bodies.circle(x, y, 15, {
-    isStatic: false,
-    label: 'missile',
-    question: question,
-    render: { fillStyle: '#ff00ff' }
-  });
-  
-  Body.setVelocity(missile, { x: 0, y: 3 });
-  Composite.add(engine.world, missile);
-  
-  // Show question popup
-  showBossQuestion(question);
-}
-
-function showBossQuestion(question) {
-  const egg = document.getElementById('easter-egg');
-  egg.innerHTML = `<div style="font-size:20px">Boss攻击!</div><div style="font-size:28px;color:#ff00ff">${question.text}</div>`;
-  egg.style.color = '#ff00ff';
-  egg.classList.add('show');
-  
-  setTimeout(() => {
-    egg.classList.remove('show');
-    egg.style.color = '#ffd700';
-  }, 3000);
 }
 
 function updateBossHUD() {
   if (!GameState.boss) return;
   
   const hpPercent = (GameState.boss.hp / GameState.boss.maxHp) * 100;
-  document.querySelector('.boss-hp-fill').style.width = hpPercent + '%';
-  document.querySelector('.boss-name').textContent = `年兽 Boss (Lv.${GameState.level})`;
+  const fill = document.querySelector('.boss-hp-fill');
+  const name = document.querySelector('.boss-name');
+  if (fill) fill.style.width = hpPercent + '%';
+  if (name) name.textContent = `年兽 Boss Lv.${GameState.level}`;
+  
+  const hud = document.getElementById('boss-hud');
+  if (hud) hud.classList.add('show');
 }
 
-// ==================== 题目生成 ====================
+// ==================== 题目生成 - 优化难度曲线 ====================
 function generateQuestion() {
   const level = GameState.level;
   let a, b, op, answer;
   
-  // Boss level - no regular questions
   if (GameState.isBossLevel) {
-    document.getElementById('question').textContent = '击败 Boss!';
-    document.getElementById('answer-display').textContent = '💥';
+    const el = document.getElementById('question');
+    const display = document.getElementById('answer-display');
+    if (el) el.textContent = '击败 Boss!';
+    if (display) display.textContent = '💥';
     GameState.currentAnswer = '';
     return;
   }
 
-  if (level <= 5) {
-    op = Math.random() > 0.5 ? '+' : '-';
+  // 优化难度曲线，前期更简单
+  if (level <= 3) {
+    // 1-3关：简单加减，10以内
+    op = Math.random() > 0.4 ? '+' : '-';
     if (op === '+') {
-      a = Math.floor(Math.random() * 10) + 1;
-      b = Math.floor(Math.random() * 10) + 1;
+      a = Math.floor(Math.random() * 8) + 1;
+      b = Math.floor(Math.random() * 8) + 1;
       answer = a + b;
     } else {
-      a = Math.floor(Math.random() * 15) + 5;
-      b = Math.floor(Math.random() * a) + 1;
+      a = Math.floor(Math.random() * 10) + 3;
+      b = Math.floor(Math.random() * (a - 1)) + 1;
       answer = a - b;
     }
-  } else if (level <= 15) {
+  } else if (level <= 6) {
+    // 4-6关：加减混合，20以内
+    op = Math.random() > 0.4 ? '+' : '-';
+    if (op === '+') {
+      a = Math.floor(Math.random() * 15) + 3;
+      b = Math.floor(Math.random() * 12) + 2;
+      answer = a + b;
+    } else {
+      a = Math.floor(Math.random() * 18) + 5;
+      b = Math.floor(Math.random() * (a - 2)) + 1;
+      answer = a - b;
+    }
+  } else if (level <= 10) {
+    // 7-10关：引入乘法，加减加大
     const type = Math.random();
     if (type < 0.4) {
       op = '+';
-      a = Math.floor(Math.random() * 50) + 10;
-      b = Math.floor(Math.random() * 50) + 10;
+      a = Math.floor(Math.random() * 30) + 10;
+      b = Math.floor(Math.random() * 30) + 5;
       answer = a + b;
     } else if (type < 0.7) {
       op = '-';
-      a = Math.floor(Math.random() * 80) + 20;
-      b = Math.floor(Math.random() * a) + 1;
+      a = Math.floor(Math.random() * 40) + 20;
+      b = Math.floor(Math.random() * (a - 5)) + 3;
       answer = a - b;
     } else {
+      op = '×';
+      a = Math.floor(Math.random() * 7) + 2;
+      b = Math.floor(Math.random() * 7) + 2;
+      answer = a * b;
+    }
+  } else if (level <= 15) {
+    // 11-15关：全面运算
+    const type = Math.random();
+    if (type < 0.3) {
+      op = '+';
+      a = Math.floor(Math.random() * 50) + 20;
+      b = Math.floor(Math.random() * 40) + 10;
+      answer = a + b;
+    } else if (type < 0.55) {
+      op = '-';
+      a = Math.floor(Math.random() * 60) + 30;
+      b = Math.floor(Math.random() * (a - 10)) + 5;
+      answer = a - b;
+    } else if (type < 0.8) {
       op = '×';
       a = Math.floor(Math.random() * 9) + 2;
       b = Math.floor(Math.random() * 9) + 2;
       answer = a * b;
+    } else {
+      op = '÷';
+      b = Math.floor(Math.random() * 7) + 2;
+      answer = Math.floor(Math.random() * 8) + 2;
+      a = b * answer;
     }
   } else {
+    // 16+关：高难度
     const type = Math.random();
     if (type < 0.25) {
       op = '+';
-      a = Math.floor(Math.random() * 90) + 10;
-      b = Math.floor(Math.random() * 90) + 10;
+      a = Math.floor(Math.random() * 80) + 20;
+      b = Math.floor(Math.random() * 60) + 20;
       answer = a + b;
     } else if (type < 0.5) {
       op = '-';
-      a = Math.floor(Math.random() * 90) + 10;
-      b = Math.floor(Math.random() * a) + 1;
+      a = Math.floor(Math.random() * 90) + 30;
+      b = Math.floor(Math.random() * (a - 15)) + 10;
       answer = a - b;
     } else if (type < 0.75) {
       op = '×';
-      a = Math.floor(Math.random() * 12) + 2;
-      b = Math.floor(Math.random() * 12) + 2;
+      a = Math.floor(Math.random() * 11) + 2;
+      b = Math.floor(Math.random() * 11) + 2;
       answer = a * b;
     } else {
       op = '÷';
-      b = Math.floor(Math.random() * 9) + 2;
-      answer = Math.floor(Math.random() * 12) + 2;
+      b = Math.floor(Math.random() * 8) + 2;
+      answer = Math.floor(Math.random() * 10) + 2;
       a = b * answer;
     }
   }
 
   GameState.correctAnswer = answer;
-  document.getElementById('question').textContent = `${a} ${op} ${b} = ?`;
-  document.getElementById('answer-display').textContent = '';
+  const questionEl = document.getElementById('question');
+  const displayEl = document.getElementById('answer-display');
+  if (questionEl) questionEl.textContent = `${a} ${op} ${b} = ?`;
+  if (displayEl) displayEl.textContent = '';
   GameState.currentAnswer = '';
 }
 
-// ==================== 方块系统 ====================
+// ==================== 方块系统 - 优化难度 ====================
 function createBlocks() {
   Composite.clear(engine.world);
   GameState.blocks = [];
   GameState.bullets = [];
   
-  // Check for boss level
   if (GameState.level % 5 === 0) {
     GameState.isBossLevel = true;
     GameState.boss = new Boss(GameState.level);
     
-    document.getElementById('boss-hud').classList.add('show');
+    const hud = document.getElementById('boss-hud');
+    if (hud) hud.classList.add('show');
     updateBossHUD();
     
-    // Boss warning
     const warning = document.getElementById('boss-warning');
-    warning.classList.add('show');
-    playSound('bossWarning');
-    setTimeout(() => warning.classList.remove('show'), 2000);
+    if (warning) {
+      warning.classList.add('show');
+      playSound('bossWarning');
+      setTimeout(() => warning.classList.remove('show'), 2000);
+    }
     
     generateQuestion();
     return;
   }
   
   GameState.isBossLevel = false;
-  document.getElementById('boss-hud').classList.remove('show');
+  document.getElementById('boss-hud')?.classList.remove('show');
 
   const level = GameState.level;
-  const count = Math.min(3 + level * 2, 20);
+  // 减少方块数量，降低难度
+  const count = Math.min(2 + Math.floor(level * 1.5), 15);
 
-  if (level <= 3) {
-    // Static grid
-    const size = 40;
-    const cols = 5;
+  if (level <= 4) {
+    // 1-4关：静态方块，简单
+    const size = 42;
+    const cols = 4;
     const rows = Math.ceil(count / cols);
     const gridWidth = cols * size;
     const startX = (CONFIG.width - gridWidth) / 2 + size / 2;
-    const startY = 80;
-
-    for (let i = 0; i < count; i++) {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      createSingleBlock(startX + col * size, startY + row * size, true, size);
-    }
-  } else if (level <= 10) {
-    // Moving blocks
-    const size = 40;
-    const spacing = 50;
-    const cols = 5;
-    const rows = Math.ceil(count / cols);
-    const gridWidth = cols * spacing;
-    const startX = (CONFIG.width - gridWidth) / 2 + spacing / 2;
     const startY = 60;
 
     for (let i = 0; i < count; i++) {
       const col = i % cols;
       const row = Math.floor(i / cols);
-      const block = createSingleBlock(startX + col * spacing, startY + row * spacing, false, size);
-      block.movePattern = 'horizontal';
-      block.movePhase = i * 0.5;
+      createSingleBlock(startX + col * size, startY + row * size, true, size, 1);
+    }
+  } else if (level <= 8) {
+    // 5-8关：轻微移动，HP增加
+    const size = 40;
+    const spacing = 48;
+    const cols = 4;
+    const rows = Math.ceil(count / cols);
+    const gridWidth = cols * spacing;
+    const startX = (CONFIG.width - gridWidth) / 2 + spacing / 2;
+    const startY = 50;
+
+    for (let i = 0; i < count; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const hp = Math.random() > 0.7 ? 2 : 1;
+      const block = createSingleBlock(startX + col * spacing, startY + row * spacing, false, size, hp);
+      if (level >= 7) {
+        block.movePattern = 'horizontal';
+        block.movePhase = i * 0.3;
+        block.originalX = startX + col * spacing;
+      }
+    }
+  } else if (level <= 12) {
+    // 9-12关：更多移动
+    const size = 38;
+    const spacing = 45;
+    const cols = 5;
+    const rows = Math.ceil(count / cols);
+    const gridWidth = cols * spacing;
+    const startX = (CONFIG.width - gridWidth) / 2 + spacing / 2;
+    const startY = 45;
+
+    for (let i = 0; i < count; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const hp = Math.random() > 0.6 ? 2 : 1;
+      const block = createSingleBlock(startX + col * spacing, startY + row * spacing, false, size, hp);
+      block.movePattern = 'sine';
+      block.movePhase = i * 0.4;
+      block.originalX = startX + col * spacing;
+      block.originalY = startY + row * spacing;
     }
   } else {
-    // Chaotic blocks with different patterns
+    // 13+关：混乱模式
     for (let i = 0; i < count; i++) {
       const x = 60 + Math.random() * (CONFIG.width - 120);
-      const y = 40 + Math.random() * (CONFIG.height / 3);
-      const block = createSingleBlock(x, y, false, 38);
+      const y = 40 + Math.random() * (CONFIG.height / 4);
+      const hp = Math.random() > 0.5 ? 2 : 1;
+      const block = createSingleBlock(x, y, false, 36, hp);
       
-      const patterns = ['sine', 'circle', 'fall'];
+      const patterns = ['sine', 'circle'];
       block.movePattern = patterns[Math.floor(Math.random() * patterns.length)];
       block.movePhase = Math.random() * Math.PI * 2;
       block.originalX = x;
@@ -676,18 +780,18 @@ function createBlocks() {
   generateQuestion();
 }
 
-function createSingleBlock(x, y, isStatic, size) {
-  const isGold = Math.random() < 0.1;
-  const hp = isGold ? 3 : (Math.random() > 0.7 ? 2 : 1);
+function createSingleBlock(x, y, isStatic, size, hp = 1) {
+  const isGold = Math.random() < 0.08;
+  const finalHp = isGold ? 3 : hp;
   
   const block = Bodies.rectangle(x, y, size, size, {
     isStatic: isStatic,
-    restitution: 0.3,
+    restitution: 0.2,
     friction: 0.1,
-    frictionAir: 0.01,
+    frictionAir: isStatic ? 1 : 0.02, // 非静态方块空气阻力
     label: 'block',
-    hp: hp,
-    maxHp: hp,
+    hp: finalHp,
+    maxHp: finalHp,
     isGold: isGold,
     render: {
       fillStyle: isGold ? '#ffd700' : (Math.random() > 0.5 ? '#ff6b6b' : '#4ecdc4')
@@ -700,6 +804,16 @@ function createSingleBlock(x, y, isStatic, size) {
 }
 
 function updateBlocks() {
+  // 子弹时间效果
+  if (GameState.skills.slowMotion.active) {
+    GameState.skills.slowMotion.duration--;
+    if (GameState.skills.slowMotion.duration <= 0) {
+      GameState.skills.slowMotion.active = false;
+      engine.timing.timeScale = 1;
+      document.body.style.filter = '';
+    }
+  }
+  
   if (GameState.skills.freeze.active) return;
   
   const time = Date.now() / 1000;
@@ -707,34 +821,32 @@ function updateBlocks() {
   GameState.blocks.forEach(block => {
     if (!block.movePattern) return;
     
+    // 根据关卡调整移动幅度
+    const moveScale = Math.min(1 + GameState.level * 0.05, 2);
+    
     switch(block.movePattern) {
       case 'horizontal':
         Body.setPosition(block, {
-          x: block.originalX || block.position.x + Math.sin(time + block.movePhase) * 2,
+          x: block.originalX + Math.sin(time * 0.8 + block.movePhase) * 20 * moveScale,
           y: block.position.y
         });
         break;
       case 'sine':
         Body.setPosition(block, {
-          x: (block.originalX || block.position.x) + Math.sin(time * 2 + block.movePhase) * 30,
-          y: block.position.y + 0.5
+          x: block.originalX + Math.sin(time * 1.5 + block.movePhase) * 25 * moveScale,
+          y: block.position.y + 0.3
         });
         break;
       case 'circle':
-        const radius = 30;
+        const radius = 20 * moveScale;
         Body.setPosition(block, {
-          x: (block.originalX || block.position.x) + Math.cos(time + block.movePhase) * radius,
-          y: (block.originalY || block.position.y) + Math.sin(time + block.movePhase) * radius
+          x: block.originalX + Math.cos(time + block.movePhase) * radius,
+          y: block.originalY + Math.sin(time + block.movePhase) * radius
         });
-        break;
-      case 'fall':
-        // Falls faster
-        Body.setVelocity(block, { x: block.velocity?.x || 0, y: 2 });
         break;
     }
   });
   
-  // Update boss
   if (GameState.boss) {
     GameState.boss.update();
   }
@@ -748,13 +860,13 @@ function updateFeverMode() {
   
   if (GameState.isFever && !wasFever) {
     GameState.shakeFrames = 30;
-    document.getElementById('fever-indicator').classList.add('show');
-    setTimeout(() => {
-      document.getElementById('fever-indicator').classList.remove('show');
-    }, 1000);
+    const indicator = document.getElementById('fever-indicator');
+    if (indicator) {
+      indicator.classList.add('show');
+      setTimeout(() => indicator.classList.remove('show'), 1000);
+    }
   }
   
-  // Check achievements
   if (GameState.combo >= 5) unlockAchievement('combo5');
   if (GameState.combo >= 10) unlockAchievement('combo10');
   if (GameState.combo > GameState.maxCombo) {
@@ -764,7 +876,7 @@ function updateFeverMode() {
 
 function triggerNuke(count) {
   const flash = document.getElementById('nuke-flash');
-  flash.classList.add('show');
+  if (flash) flash.classList.add('show');
   playSound('nuke');
   
   const clearRadius = (count * 0.25) * Math.min(CONFIG.width, CONFIG.height) / 100;
@@ -778,7 +890,7 @@ function triggerNuke(count) {
     
     if (dist < clearRadius + 100) {
       createParticles(block.position.x, block.position.y, '#ffd700', 20);
-      awardCoins(block);
+      awardCoins(block, true);
       Composite.remove(engine.world, block);
     }
   });
@@ -790,13 +902,15 @@ function triggerNuke(count) {
     return dist >= clearRadius + 100;
   });
   
-  setTimeout(() => flash.classList.remove('show'), 300);
+  setTimeout(() => flash?.classList.remove('show'), 300);
 }
 
 function triggerNukeEffect() {
   const flash = document.getElementById('nuke-flash');
-  flash.classList.add('show');
-  setTimeout(() => flash.classList.remove('show'), 500);
+  if (flash) {
+    flash.classList.add('show');
+    setTimeout(() => flash.classList.remove('show'), 500);
+  }
 }
 
 // ==================== 发射系统 ====================
@@ -816,30 +930,27 @@ function fireBullets(count) {
   const upgrade = GameState.upgradeLevel;
   let bulletCount = count;
   
-  // Plane type modifiers
   const speed = GameState.isFever ? CONFIG.bulletSpeed * 1.5 : CONFIG.bulletSpeed;
-  const interval = GameState.isFever ? 30 : 60;
+  const interval = GameState.isFever ? 25 : 50;
   
-  // Power type fires more
   if (GameState.planeType === 'power') {
     bulletCount = Math.ceil(count * 1.5);
   }
 
-  // Fire pattern based on upgrade
   const firePattern = () => {
-    const penetrate = GameState.isPenetrate || GameState.skills.penetrateBuff;
+    const penetrate = GameState.isPenetrate;
     
     switch(upgrade) {
-      case 1: // Dual
+      case 1:
         createBullet(GameState.planeX - 10, CONFIG.planeY - 20, 0, -speed, penetrate);
         createBullet(GameState.planeX + 10, CONFIG.planeY - 20, 0, -speed, penetrate);
         break;
-      case 2: // Triple
+      case 2:
         createBullet(GameState.planeX - 15, CONFIG.planeY - 20, -0.5, -speed, penetrate);
         createBullet(GameState.planeX, CONFIG.planeY - 20, 0, -speed, penetrate);
         createBullet(GameState.planeX + 15, CONFIG.planeY - 20, 0.5, -speed, penetrate);
         break;
-      case 3: // Quad
+      case 3:
         createBullet(GameState.planeX - 20, CONFIG.planeY - 20, -1, -speed, penetrate);
         createBullet(GameState.planeX - 7, CONFIG.planeY - 20, -0.3, -speed, penetrate);
         createBullet(GameState.planeX + 7, CONFIG.planeY - 20, 0.3, -speed, penetrate);
@@ -919,26 +1030,18 @@ function createDamageNumber(x, y, damage) {
   });
 }
 
-function createCoinFloat(x, y) {
-  const el = document.createElement('div');
-  el.className = 'coin-float';
-  el.textContent = '+🪙';
-  el.style.left = x + 'px';
-  el.style.top = y + 'px';
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1000);
-}
-
-function awardCoins(block) {
+function awardCoins(block, fromBomb = false) {
   const coins = block.isGold ? 5 : 1;
   GameState.coins += coins;
   GameState.totalKills++;
   
+  if (GameState.totalKills === 1) unlockAchievement('firstBlood');
   if (GameState.coins >= 100) unlockAchievement('rich');
-  if (GameState.totalKills >= 1) unlockAchievement('firstBlood');
   
-  createCoinFloat(block.position.x, block.position.y);
-  playSound('coin');
+  if (!fromBomb) {
+    showFloatingText(block.position.x, block.position.y - 20, `+${coins}🪙`, '#ffd700');
+    playSound('coin');
+  }
 }
 
 // ==================== 碰撞检测 ====================
@@ -954,12 +1057,10 @@ Events.on(engine, 'collisionStart', (event) => {
     const isBossA = (bodyA.label === 'boss');
     const isBossB = (bodyB.label === 'boss');
 
-    // Bullet vs Block
     if ((isAttackA && isBlockB) || (isAttackB && isBlockA)) {
       const bullet = isAttackA ? bodyA : bodyB;
       const block = isBlockA ? bodyA : bodyB;
 
-      // Handle penetration
       if (bullet.isPenetrate && bullet.penetrateCount > 0) {
         bullet.penetrateCount--;
       } else {
@@ -967,7 +1068,6 @@ Events.on(engine, 'collisionStart', (event) => {
         GameState.bullets = GameState.bullets.filter(b => b !== bullet);
       }
 
-      // Damage block
       const damage = bullet.damage || 1;
       block.hp -= damage;
       createParticles(block.position.x, block.position.y, block.render.fillStyle, 5);
@@ -982,7 +1082,6 @@ Events.on(engine, 'collisionStart', (event) => {
       }
     }
     
-    // Bullet vs Boss
     if ((isAttackA && isBossB) || (isAttackB && isBossA)) {
       const bullet = isAttackA ? bodyA : bodyB;
       Composite.remove(engine.world, bullet);
@@ -995,7 +1094,7 @@ Events.on(engine, 'collisionStart', (event) => {
   });
 });
 
-// ==================== 输入处理 ====================
+// ==================== 输入处理 - 优化UI交互 ====================
 document.querySelectorAll('.key').forEach(key => {
   key.addEventListener('click', (e) => {
     if (GameState.isGameOver || GameState.isShopOpen) return;
@@ -1006,25 +1105,43 @@ document.querySelectorAll('.key').forEach(key => {
     if (num !== undefined) {
       if (GameState.currentAnswer.length < 2) {
         GameState.currentAnswer += num;
-        document.getElementById('answer-display').textContent = GameState.currentAnswer;
+        const display = document.getElementById('answer-display');
+        if (display) display.textContent = GameState.currentAnswer;
+
+        // 输入时隐藏题目，减少视觉干扰
+        const questionEl = document.getElementById('question');
+        if (questionEl) questionEl.style.opacity = '0.3';
 
         clearTimeout(GameState.submitTimer);
         
-        // 如果输入了2位数字，立即提交；否则等待1200ms给用户输入第二位
         if (GameState.currentAnswer.length >= 2) {
+          // 输入完2位后立即提交
           GameState.submitTimer = setTimeout(() => {
-            if (GameState.currentAnswer.length > 0) checkAnswer();
-          }, 400);
+            if (GameState.currentAnswer.length > 0) {
+              checkAnswer();
+              // 恢复题目显示
+              if (questionEl) questionEl.style.opacity = '1';
+            }
+          }, 300);
         } else {
+          // 只输入1位，等待更长时间
           GameState.submitTimer = setTimeout(() => {
-            if (GameState.currentAnswer.length > 0) checkAnswer();
-          }, 1200);  // 增加到1200ms，给用户足够时间输入第二位
+            if (GameState.currentAnswer.length > 0) {
+              checkAnswer();
+              if (questionEl) questionEl.style.opacity = '1';
+            }
+          }, 1500);
         }
       }
     } else if (action === 'clear') {
       GameState.currentAnswer = '';
-      document.getElementById('answer-display').textContent = '';
+      const display = document.getElementById('answer-display');
+      if (display) display.textContent = '';
       clearTimeout(GameState.submitTimer);
+      
+      // 恢复题目显示
+      const questionEl = document.getElementById('question');
+      if (questionEl) questionEl.style.opacity = '1';
     }
   });
 });
@@ -1037,6 +1154,10 @@ function checkAnswer() {
   GameState.stats.correctAnswers++;
   updateHUD();
 
+  // 恢复题目显示
+  const questionEl = document.getElementById('question');
+  if (questionEl) questionEl.style.opacity = '1';
+
   if (userAnswer === GameState.correctAnswer) {
     playSound('correct');
     updateCombo(true);
@@ -1044,17 +1165,21 @@ function checkAnswer() {
     
     setTimeout(() => {
       if (!GameState.isGameOver) generateQuestion();
-    }, 400);
+    }, 300);
   } else {
     playSound('wrong');
     GameState.stats.wrongAnswers++;
     updateCombo(false);
-    document.getElementById('answer-display').style.color = '#ff4444';
-    setTimeout(() => {
-      document.getElementById('answer-display').style.color = '#ffd700';
-      GameState.currentAnswer = '';
-      document.getElementById('answer-display').textContent = '';
-    }, 400);
+    
+    const display = document.getElementById('answer-display');
+    if (display) {
+      display.style.color = '#ff4444';
+      setTimeout(() => {
+        display.style.color = '#ffd700';
+        GameState.currentAnswer = '';
+        display.textContent = '';
+      }, 400);
+    }
   }
   
   if (GameState.stats.correctAnswers >= 50) unlockAchievement('mathWizard');
@@ -1081,61 +1206,87 @@ function updateCombo(isCorrect) {
 
     if (newUpgrade > GameState.upgradeLevel) {
       GameState.upgradeLevel = newUpgrade;
-      document.getElementById('combo-text').textContent = text;
+      const comboText = document.getElementById('combo-text');
+      if (comboText) comboText.textContent = text;
     }
 
-    document.getElementById('combo-count').textContent = GameState.combo;
-    comboEl.style.color = '#ff6b6b';
+    const comboCount = document.getElementById('combo-count');
+    if (comboCount) comboCount.textContent = GameState.combo;
+    if (comboEl) comboEl.style.color = '#ff6b6b';
   } else {
     GameState.combo = 0;
     GameState.upgradeLevel = 0;
-    document.getElementById('combo-text').textContent = '';
-    document.getElementById('combo-count').textContent = '0';
-    comboEl.style.color = '#666';
+    const comboText = document.getElementById('combo-text');
+    const comboCount = document.getElementById('combo-count');
+    if (comboText) comboText.textContent = '';
+    if (comboCount) comboCount.textContent = '0';
+    if (comboEl) comboEl.style.color = '#666';
   }
 }
 
 // ==================== HUD更新 ====================
 function updateHUD() {
-  document.getElementById('level').textContent = GameState.level;
-  document.getElementById('lives').textContent = '❤️'.repeat(GameState.lives) || '💔';
-  document.getElementById('coins').textContent = GameState.coins;
+  const levelEl = document.getElementById('level');
+  const livesEl = document.getElementById('lives');
+  const coinsEl = document.getElementById('coins');
+  
+  if (levelEl) levelEl.textContent = GameState.level;
+  if (livesEl) livesEl.textContent = '❤️'.repeat(GameState.lives) || '💔';
+  if (coinsEl) coinsEl.textContent = GameState.coins;
 }
 
-// ==================== 游戏状态检查 ====================
+// ==================== 游戏状态检查 - 优化生命系统 ====================
 function checkGameState() {
-  // Check blocks falling
+  // 检查方块掉落
   GameState.blocks.forEach(block => {
-    if (block.position.y > CONFIG.height - 80) {
-      if (GameState.skills.shield.active) {
+    if (block.position.y > CONFIG.height - 60) {
+      // 有护盾时抵挡
+      if (GameState.skills.shield.active && GameState.skills.shield.hits > 0) {
         GameState.skills.shield.hits--;
+        createParticles(block.position.x, CONFIG.height - 60, '#00ff88', 10);
+        showFloatingText(block.position.x, CONFIG.height - 100, '🛡️ 护盾!', '#00ff88');
+        
         if (GameState.skills.shield.hits <= 0) {
           GameState.skills.shield.active = false;
-          document.querySelector('.shield-overlay').classList.remove('show');
+          document.querySelector('.shield-overlay')?.classList.remove('show');
         }
-        Composite.remove(engine.world, block);
-        GameState.blocks = GameState.blocks.filter(b => b !== block);
-      } else {
-        GameState.lives--;
-        updateHUD();
-        Composite.remove(engine.world, block);
-        GameState.blocks = GameState.blocks.filter(b => b !== block);
         
-        if (GameState.lives <= 0) {
-          gameOver(false);
-        }
+        Composite.remove(engine.world, block);
+        GameState.blocks = GameState.blocks.filter(b => b !== block);
+        return;
+      }
+      
+      // 扣除生命
+      GameState.lives--;
+      GameState.stats.blocksLost++;
+      updateHUD();
+      
+      // 视觉效果
+      createParticles(block.position.x, CONFIG.height - 60, '#ff4444', 15);
+      showFloatingText(CONFIG.width/2, CONFIG.height/2, '❤️ -1', '#ff4444');
+      playSound('lifeLost');
+      
+      // 屏幕震动
+      GameState.shakeFrames = 20;
+      
+      Composite.remove(engine.world, block);
+      GameState.blocks = GameState.blocks.filter(b => b !== block);
+      
+      // 生命为0时游戏结束
+      if (GameState.lives <= 0) {
+        gameOver(false);
       }
     }
   });
 
-  // Level clear check
+  // 过关检查
   if (!GameState.isBossLevel && GameState.blocks.length === 0 && !GameState.isGameOver) {
     levelComplete();
   } else if (GameState.isBossLevel && !GameState.boss && !GameState.isGameOver) {
     levelComplete();
   }
 
-  // Clean bullets
+  // 清理子弹
   GameState.bullets = GameState.bullets.filter(bullet => {
     if (bullet.position.y < -50) {
       Composite.remove(engine.world, bullet);
@@ -1144,12 +1295,16 @@ function checkGameState() {
     return true;
   });
   
-  // Update moving blocks
   updateBlocks();
 }
 
 function levelComplete() {
   if (GameState.isPaused) return;
+  
+  // 检查完美通关
+  if (GameState.level === 5 && GameState.stats.blocksLost === 0) {
+    unlockAchievement('perfect');
+  }
   
   GameState.isPaused = true;
   if (GameState.fireInterval) {
@@ -1158,8 +1313,10 @@ function levelComplete() {
   }
 
   const egg = document.getElementById('easter-egg');
-  egg.innerHTML = `<div>第 ${GameState.level} 关</div><div style="color:#00ff00">通关!</div>`;
-  egg.classList.add('show');
+  if (egg) {
+    egg.innerHTML = `<div>第 ${GameState.level} 关</div><div style="color:#00ff00;font-size:32px">通关!</div>`;
+    egg.classList.add('show');
+  }
 
   setTimeout(() => {
     GameState.level++;
@@ -1168,14 +1325,15 @@ function levelComplete() {
     GameState.attempts = 0;
     GameState.combo = 0;
     GameState.upgradeLevel = 0;
-    document.getElementById('combo-text').textContent = '';
+    const comboText = document.getElementById('combo-text');
+    if (comboText) comboText.textContent = '';
     
     updateHUD();
     createBlocks();
     GameState.isPaused = false;
 
-    setTimeout(() => egg.classList.remove('show'), 1000);
-  }, 1200);
+    setTimeout(() => egg?.classList.remove('show'), 1000);
+  }, 1500);
 }
 
 function gameOver(isWin) {
@@ -1185,6 +1343,8 @@ function gameOver(isWin) {
   }
   
   const overlay = document.getElementById('overlay');
+  if (!overlay) return;
+  
   const unlockedAchievements = Object.values(Achievements).filter(a => a.unlocked);
   
   overlay.innerHTML = `
@@ -1192,11 +1352,11 @@ function gameOver(isWin) {
     <div class="subtitle">到达关卡: ${GameState.level} | 最高连击: ${GameState.maxCombo}</div>
     <div class="features">
       <p>总击杀: <span>${GameState.totalKills}</span> | 金币: <span>${GameState.coins}</span></p>
-      <p>Boss击败: <span>${GameState.stats.bossKilled}</span></p>
+      <p>正确率: <span>${Math.round((GameState.stats.correctAnswers / (GameState.stats.correctAnswers + GameState.stats.wrongAnswers) * 100) || 0)}%</span></p>
     </div>
     <div class="achievements-showcase">
       ${Object.values(Achievements).map(a => 
-        `<span class="achievement-badge ${a.unlocked ? 'unlocked' : ''}" title="${a.name}">${a.icon}</span>`
+        `<span class="achievement-badge ${a.unlocked ? 'unlocked' : ''}" title="${a.name}: ${a.desc}">${a.icon}</span>`
       ).join('')}
     </div>
     <button class="btn" onclick="resetGame()">再玩一次</button>
@@ -1208,44 +1368,44 @@ function gameOver(isWin) {
 function render() {
   ctx.save();
   
-  // Screen shake
+  // 屏幕震动
   if (GameState.shakeFrames > 0) {
-    const shakeX = (Math.random() - 0.5) * 6;
-    const shakeY = (Math.random() - 0.5) * 6;
+    const shakeX = (Math.random() - 0.5) * (GameState.shakeFrames > 10 ? 6 : 3);
+    const shakeY = (Math.random() - 0.5) * (GameState.shakeFrames > 10 ? 6 : 3);
     ctx.translate(shakeX, shakeY);
     GameState.shakeFrames--;
   } else if (GameState.combo >= 3) {
-    const shakeX = (Math.random() - 0.5) * 2;
-    const shakeY = (Math.random() - 0.5) * 2;
+    const shakeX = (Math.random() - 0.5) * 1.5;
+    const shakeY = (Math.random() - 0.5) * 1.5;
     ctx.translate(shakeX, shakeY);
   }
   
-  // Clear canvas
+  // 清空画布
   ctx.fillStyle = '#0a0a1a';
   ctx.fillRect(0, 0, CONFIG.width, CONFIG.height);
   
-  // Draw grid background
-  ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+  // 网格背景
+  ctx.strokeStyle = 'rgba(255,255,255,0.015)';
   ctx.lineWidth = 1;
-  for (let i = 0; i < CONFIG.width; i += 30) {
+  for (let i = 0; i < CONFIG.width; i += 40) {
     ctx.beginPath();
     ctx.moveTo(i, 0);
     ctx.lineTo(i, CONFIG.height);
     ctx.stroke();
   }
 
-  // Draw plane
+  // 绘制飞机
   drawPlane(GameState.planeX, CONFIG.planeY);
   
-  // Draw boss
+  // 绘制Boss
   if (GameState.boss) {
     GameState.boss.draw(ctx);
   }
   
-  // Draw blocks
+  // 绘制方块
   GameState.blocks.forEach(block => drawBlock(block));
   
-  // Draw bullets
+  // 绘制子弹
   GameState.bullets.forEach(bullet => {
     ctx.fillStyle = bullet.render.fillStyle;
     ctx.shadowBlur = bullet.isPenetrate ? 15 : 0;
@@ -1255,16 +1415,15 @@ function render() {
     ctx.fill();
     ctx.shadowBlur = 0;
     
-    // Trail
     ctx.fillStyle = 'rgba(255,215,0,0.3)';
-    ctx.fillRect(bullet.position.x - 2, bullet.position.y + 5, 4, 15);
+    ctx.fillRect(bullet.position.x - 2, bullet.position.y + 5, 4, 12);
   });
   
-  // Draw particles
+  // 绘制粒子
   GameState.particles = GameState.particles.filter(p => {
     p.x += p.vx;
     p.y += p.vy;
-    p.vy += 0.15;
+    p.vy += 0.12;
     p.life--;
     p.rotation += p.rotSpeed;
     
@@ -1281,7 +1440,7 @@ function render() {
     return false;
   });
   
-  // Draw damage numbers
+  // 绘制伤害数字
   ctx.font = 'bold 16px Courier New';
   GameState.damageNumbers = GameState.damageNumbers.filter(d => {
     d.y += d.vy;
@@ -1294,6 +1453,21 @@ function render() {
     return false;
   });
   
+  // 绘制飘字
+  ctx.font = 'bold 18px Courier New';
+  GameState.floatingTexts = GameState.floatingTexts.filter(t => {
+    t.y += t.vy;
+    t.life--;
+    if (t.life > 0) {
+      ctx.fillStyle = t.color;
+      ctx.globalAlpha = t.life / 60;
+      ctx.fillText(t.text, t.x, t.y);
+      ctx.globalAlpha = 1;
+      return true;
+    }
+    return false;
+  });
+  
   ctx.restore();
 }
 
@@ -1301,7 +1475,6 @@ function drawPlane(x, y) {
   ctx.save();
   ctx.translate(x, y);
   
-  // Different plane colors based on type
   const colors = {
     balanced: { body: '#ff4444', wing: '#cc3333' },
     speed: { body: '#4488ff', wing: '#3366cc' },
@@ -1309,19 +1482,15 @@ function drawPlane(x, y) {
   };
   const c = colors[GameState.planeType];
   
-  // Wings
   ctx.fillStyle = c.wing;
-  ctx.fillRect(-30, 0, 60, 18);
+  ctx.fillRect(-28, 0, 56, 18);
   
-  // Body
   ctx.fillStyle = c.body;
   ctx.fillRect(-12, -25, 24, 50);
   
-  // Cockpit
   ctx.fillStyle = CONFIG.colors.planeWindow;
   ctx.fillRect(-8, -18, 16, 14);
   
-  // Engine glow
   if (GameState.combo >= 3) {
     ctx.shadowBlur = 20;
     ctx.shadowColor = '#ff6600';
@@ -1330,7 +1499,6 @@ function drawPlane(x, y) {
   ctx.fillRect(-8, 22, 16, 8);
   ctx.shadowBlur = 0;
   
-  // Upgrade guns
   if (GameState.upgradeLevel >= 1) {
     ctx.fillStyle = '#ffd700';
     ctx.fillRect(-22, -30, 6, 12);
@@ -1347,13 +1515,12 @@ function drawPlane(x, y) {
 function drawBlock(block) {
   const x = block.position.x;
   const y = block.position.y;
-  const size = 35;
+  const size = 36;
   
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(block.angle);
   
-  // Glow for gold blocks
   if (block.isGold) {
     ctx.shadowBlur = 15;
     ctx.shadowColor = '#ffd700';
@@ -1363,20 +1530,17 @@ function drawBlock(block) {
   ctx.fillRect(-size/2, -size/2, size, size);
   ctx.shadowBlur = 0;
   
-  // Border
-  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
   ctx.lineWidth = 2;
   ctx.strokeRect(-size/2, -size/2, size, size);
-  
-  // HP indicator
+
   if (block.hp < block.maxHp) {
     ctx.fillStyle = '#000';
     ctx.fillRect(-size/2, -size/2 - 10, size, 5);
     ctx.fillStyle = '#00ff00';
     ctx.fillRect(-size/2, -size/2 - 10, size * (block.hp / block.maxHp), 5);
   }
-  
-  // Gold indicator
+
   if (block.isGold) {
     ctx.fillStyle = '#000';
     ctx.font = 'bold 14px Arial';
@@ -1401,52 +1565,44 @@ function gameLoop() {
 let moveLeft = false;
 let moveRight = false;
 
-const btnLeft = document.getElementById('btn-left');
-const btnRight = document.getElementById('btn-right');
-
-// Only add listeners if buttons exist (for backward compatibility)
-if (btnLeft && btnRight) {
-  btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); moveLeft = true; });
-  btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); moveLeft = false; });
-  btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); moveRight = true; });
-  btnRight.addEventListener('touchend', (e) => { e.preventDefault(); moveRight = false; });
-  btnLeft.addEventListener('mousedown', () => moveLeft = true);
-  btnLeft.addEventListener('mouseup', () => moveLeft = false);
-  btnRight.addEventListener('mousedown', () => moveRight = true);
-  btnRight.addEventListener('mouseup', () => moveRight = false);
-}
-
-// Touch controls
-document.getElementById('touch-left').addEventListener('touchstart', (e) => {
+// 触摸控制
+document.getElementById('touch-left')?.addEventListener('touchstart', (e) => {
   e.preventDefault();
   moveLeft = true;
   document.querySelectorAll('.touch-hint').forEach(h => h.style.opacity = '0');
 });
-document.getElementById('touch-left').addEventListener('touchend', (e) => {
+document.getElementById('touch-left')?.addEventListener('touchend', (e) => {
   e.preventDefault();
   moveLeft = false;
 });
-document.getElementById('touch-right').addEventListener('touchstart', (e) => {
+document.getElementById('touch-right')?.addEventListener('touchstart', (e) => {
   e.preventDefault();
   moveRight = true;
   document.querySelectorAll('.touch-hint').forEach(h => h.style.opacity = '0');
 });
-document.getElementById('touch-right').addEventListener('touchend', (e) => {
+document.getElementById('touch-right')?.addEventListener('touchend', (e) => {
   e.preventDefault();
   moveRight = false;
 });
 
-// Auto aim toggle
+// 鼠标控制（测试用）
+document.getElementById('touch-left')?.addEventListener('mousedown', () => moveLeft = true);
+document.getElementById('touch-left')?.addEventListener('mouseup', () => moveLeft = false);
+document.getElementById('touch-right')?.addEventListener('mousedown', () => moveRight = true);
+document.getElementById('touch-right')?.addEventListener('mouseup', () => moveRight = false);
+
+// 自动/手动瞄准切换
 function toggleAimMode() {
   GameState.autoAim = !GameState.autoAim;
   const modeText = GameState.autoAim ? '自动' : '手动';
-  document.getElementById('aim-mode').textContent = modeText;
+  const modeEl = document.getElementById('aim-mode');
+  if (modeEl) modeEl.textContent = modeText;
   
   const toggleBtn = document.getElementById('aim-toggle');
-  toggleBtn.style.background = GameState.autoAim ? 'rgba(0,255,0,0.4)' : 'rgba(255,215,0,0.3)';
+  if (toggleBtn) toggleBtn.style.background = GameState.autoAim ? 'rgba(0,255,0,0.4)' : 'rgba(255,215,0,0.3)';
 }
 
-// Sound toggle
+// 音效开关
 function toggleSound() {
   GameState.soundEnabled = !GameState.soundEnabled;
   const icon = document.getElementById('sound-icon');
@@ -1454,28 +1610,28 @@ function toggleSound() {
   const btn = document.getElementById('sound-toggle');
   
   if (GameState.soundEnabled) {
-    icon.textContent = '🔊';
-    text.textContent = '开启';
-    btn.style.background = 'rgba(0,255,255,0.2)';
+    if (icon) icon.textContent = '🔊';
+    if (text) text.textContent = '开启';
+    if (btn) btn.style.background = 'rgba(0,255,255,0.2)';
   } else {
-    icon.textContent = '🔇';
-    text.textContent = '关闭';
-    btn.style.background = 'rgba(100,100,100,0.3)';
+    if (icon) icon.textContent = '🔇';
+    if (text) text.textContent = '关闭';
+    if (btn) btn.style.background = 'rgba(100,100,100,0.3)';
   }
 }
 
-// Plane movement
+// 飞机移动
 setInterval(() => {
   if (GameState.isGameOver || GameState.isPaused) return;
   
-  const speed = GameState.planeType === 'speed' ? 12 : 8;
+  const speed = GameState.planeType === 'speed' ? 14 : GameState.planeType === 'power' ? 7 : 10;
   
   if (GameState.autoAim && GameState.blocks.length > 0) {
     let targetBlock = GameState.blocks.reduce((lowest, block) => 
       block.position.y > lowest.position.y ? block : lowest, GameState.blocks[0]);
     
     const diff = targetBlock.position.x - GameState.planeX;
-    GameState.planeX += diff * 0.12;
+    GameState.planeX += diff * 0.15;
   } else {
     if (moveLeft && GameState.planeX > 40) GameState.planeX -= speed;
     if (moveRight && GameState.planeX < CONFIG.width - 40) GameState.planeX += speed;
@@ -1484,21 +1640,23 @@ setInterval(() => {
   GameState.planeX = Math.max(40, Math.min(CONFIG.width - 40, GameState.planeX));
 }, 16);
 
-// Prevent page scroll
+// 防止页面滚动
 document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
-// Window resize
+// 窗口大小调整
 window.addEventListener('resize', () => {
   CONFIG.width = window.innerWidth;
   CONFIG.height = window.innerHeight;
-  CONFIG.planeY = window.innerHeight - 200;
+  CONFIG.planeY = window.innerHeight - 180;
   canvas.width = CONFIG.width;
   canvas.height = CONFIG.height;
 });
 
 // ==================== 游戏控制 ====================
 function startGame() {
-  document.getElementById('overlay').style.display = 'none';
+  const overlay = document.getElementById('overlay');
+  if (overlay) overlay.style.display = 'none';
+  
   GameState.isPaused = false;
   
   if (audioCtx.state === 'suspended') {
@@ -1513,7 +1671,7 @@ function startGame() {
 function resetGame() {
   GameState.level = 1;
   GameState.attempts = 0;
-  GameState.lives = 3;
+  GameState.lives = 5;
   GameState.combo = 0;
   GameState.maxCombo = 0;
   GameState.coins = 0;
@@ -1527,23 +1685,41 @@ function resetGame() {
   GameState.blocks = [];
   GameState.particles = [];
   GameState.damageNumbers = [];
+  GameState.floatingTexts = [];
   GameState.boss = null;
   GameState.isBossLevel = false;
-  GameState.skills = { freeze: { active: false }, shield: { active: false, hits: 0 }, bomb: { count: 0 } };
+  GameState.stats = {
+    startTime: Date.now(),
+    correctAnswers: 0,
+    wrongAnswers: 0,
+    bossKilled: 0,
+    blocksLost: 0
+  };
+  GameState.skills = { 
+    freeze: { active: false }, 
+    shield: { active: false, hits: 0 }, 
+    bomb: { count: 0 },
+    slowMotion: { active: false, duration: 0 }
+  };
   
-  document.getElementById('shop-panel').classList.remove('show');
-  document.getElementById('combo-text').textContent = '';
-  document.getElementById('nuke-flash').classList.remove('show');
-  document.querySelector('.freeze-overlay').classList.remove('show');
-  document.querySelector('.shield-overlay').classList.remove('show');
-  document.getElementById('boss-hud').classList.remove('show');
+  document.getElementById('shop-panel')?.classList.remove('show');
+  const comboText = document.getElementById('combo-text');
+  if (comboText) comboText.textContent = '';
+  document.getElementById('nuke-flash')?.classList.remove('show');
+  document.querySelector('.freeze-overlay')?.classList.remove('show');
+  document.querySelector('.shield-overlay')?.classList.remove('show');
+  document.getElementById('boss-hud')?.classList.remove('show');
+  
+  // 恢复题目透明度
+  const questionEl = document.getElementById('question');
+  if (questionEl) questionEl.style.opacity = '1';
   
   Composite.clear(engine.world);
   createBlocks();
   updateHUD();
 }
 
-// Export for HTML access
+// 导出全局函数
 window.startGame = startGame;
 window.resetGame = resetGame;
 window.toggleAimMode = toggleAimMode;
