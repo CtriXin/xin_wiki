@@ -1009,9 +1009,17 @@ document.querySelectorAll('.key').forEach(key => {
         document.getElementById('answer-display').textContent = GameState.currentAnswer;
 
         clearTimeout(GameState.submitTimer);
-        GameState.submitTimer = setTimeout(() => {
-          if (GameState.currentAnswer.length > 0) checkAnswer();
-        }, 600);
+        
+        // 如果输入了2位数字，立即提交；否则等待1200ms给用户输入第二位
+        if (GameState.currentAnswer.length >= 2) {
+          GameState.submitTimer = setTimeout(() => {
+            if (GameState.currentAnswer.length > 0) checkAnswer();
+          }, 400);
+        } else {
+          GameState.submitTimer = setTimeout(() => {
+            if (GameState.currentAnswer.length > 0) checkAnswer();
+          }, 1200);  // 增加到1200ms，给用户足够时间输入第二位
+        }
       }
     } else if (action === 'clear') {
       GameState.currentAnswer = '';

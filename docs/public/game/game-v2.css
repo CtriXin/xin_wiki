@@ -325,7 +325,7 @@ html, body {
   border: 2px solid #ffd700;
   border-radius: 12px;
   text-align: center;
-  bottom: 180px;
+  bottom: 200px;  /* 从180px增加到200px，避免挡住飞机 */
   padding: 12px 20px;
   min-width: 160px;
   z-index: 50;
@@ -355,6 +355,9 @@ html, body {
   text-shadow: 2px 2px 0 #000;
   pointer-events: none;
   z-index: 50;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 5px 10px;
+  border-radius: 8px;
 }
 
 #combo-count {
