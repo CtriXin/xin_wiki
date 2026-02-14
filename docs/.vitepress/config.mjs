@@ -9,7 +9,7 @@ export default defineConfig({
     // 导航栏 - 重排顺序，移除模板
     nav: [
       { text: '首页', link: '/' },
-      { text: '🎮 游戏', link: '/features/game/' },
+      { text: '🎮 开始游戏', link: '/game-full.html', target: '_blank' },
       { text: '脚本', link: '/scripts/' },
       { text: '功能', link: '/features/' },
       { text: '迭代', link: '/iterations/' },
@@ -55,7 +55,7 @@ export default defineConfig({
           collapsed: false,
           items: [
             { text: '游戏介绍', link: '/features/game/' },
-            { text: '开始游玩 ↗', link: '/game/index.html' },
+            { text: '开始游玩 ↗', link: '/game-full.html' },
           ]
         },
         {

@@ -2,15 +2,17 @@
 
 > 从教育工具转型为"让孩子主动想玩的轻度Roguelike射击游戏"
 
-## 在线试玩
+## 🚀 开始游戏
 
-<iframe 
-  src="./game/index.html" 
-  style="width:100%; height:600px; border:2px solid #ffd700; border-radius:8px;"
-  frameborder="0"
-></iframe>
+::: tip 点击开始全屏游戏
+<a href="/xin_wiki/game-full.html" target="_blank" style="display:inline-block; background:linear-gradient(145deg, #ff6b6b, #cc5555); color:#fff; padding:15px 40px; font-size:20px; border-radius:30px; text-decoration:none; box-shadow:0 6px 0 #992222; margin:10px 0;">
+  🎮 开始游戏（全屏）
+</a>
+:::
 
-[全屏游玩 →](/game/index.html)
+**手机用户**：建议将手机横屏获得最佳体验
+
+---
 
 ---
 
