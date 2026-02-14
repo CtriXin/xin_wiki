@@ -1090,7 +1090,6 @@ function updateCombo(isCorrect) {
 // ==================== HUD更新 ====================
 function updateHUD() {
   document.getElementById('level').textContent = GameState.level;
-  document.getElementById('attempts').textContent = GameState.attempts;
   document.getElementById('lives').textContent = '❤️'.repeat(GameState.lives) || '💔';
   document.getElementById('coins').textContent = GameState.coins;
 }
@@ -1397,14 +1396,17 @@ let moveRight = false;
 const btnLeft = document.getElementById('btn-left');
 const btnRight = document.getElementById('btn-right');
 
-btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); moveLeft = true; });
-btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); moveLeft = false; });
-btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); moveRight = true; });
-btnRight.addEventListener('touchend', (e) => { e.preventDefault(); moveRight = false; });
-btnLeft.addEventListener('mousedown', () => moveLeft = true);
-btnLeft.addEventListener('mouseup', () => moveLeft = false);
-btnRight.addEventListener('mousedown', () => moveRight = true);
-btnRight.addEventListener('mouseup', () => moveRight = false);
+// Only add listeners if buttons exist (for backward compatibility)
+if (btnLeft && btnRight) {
+  btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); moveLeft = true; });
+  btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); moveLeft = false; });
+  btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); moveRight = true; });
+  btnRight.addEventListener('touchend', (e) => { e.preventDefault(); moveRight = false; });
+  btnLeft.addEventListener('mousedown', () => moveLeft = true);
+  btnLeft.addEventListener('mouseup', () => moveLeft = false);
+  btnRight.addEventListener('mousedown', () => moveRight = true);
+  btnRight.addEventListener('mouseup', () => moveRight = false);
+}
 
 // Touch controls
 document.getElementById('touch-left').addEventListener('touchstart', (e) => {
