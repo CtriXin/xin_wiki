@@ -1,0 +1,325 @@
+/* 数学飞机大战 - 样式文件 */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body {
+  background: #1a1a2e;
+  overflow: hidden;
+  font-family: 'Courier New', monospace;
+}
+
+#aim-toggle {
+  z-index: 101;
+  position: relative;
+  cursor: pointer;
+  background: rgba(255, 215, 0, 0.3);
+}
+
+.control-btn {
+  width: 70px;
+  height: 70px;
+  background: rgba(255, 215, 0, 0.2);
+  border: 3px solid #ffd700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  color: #ffd700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  pointer-events: auto;
+}
+
+.touch-hint {
+  transition: opacity 0.3s ease;
+}
+
+#gameCanvas {
+  display: block;
+  background: linear-gradient(180deg, #0f0f23 0%, #1a1a2e 100%);
+}
+
+/* UI层 */
+#ui-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* 顶部信息栏 */
+#hud {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000;
+  z-index: 100;
+  pointer-events: auto;
+  font-size: 12px;
+  gap: 5px;
+}
+
+.hud-item {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 2px solid #ffd700;
+}
+
+/* 数学题目区域 */
+#math-panel {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #ffd700;
+  border-radius: 8px;
+  text-align: center;
+  bottom: 170px;
+  padding: 8px 15px;
+  min-width: 140px;
+}
+
+#question {
+  color: #fff;
+  font-size: 18px;
+  margin-bottom: 4px;
+  font-weight: bold;
+}
+
+#answer-display {
+  color: #ffd700;
+  font-size: 20px;
+  min-height: 26px;
+  letter-spacing: 4px;
+}
+
+/* 数字键盘 */
+#keypad {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: repeat(6, 48px);
+  grid-template-rows: repeat(2, 50px);
+  gap: 6px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 10px;
+  pointer-events: auto;
+}
+
+.key {
+  width: 48px;
+  height: 50px;
+  font-size: 20px;
+  background: linear-gradient(145deg, #2a2a4a, #1a1a2e);
+  border: 2px solid #444;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.1s;
+  box-shadow: 0 4px 0 #000;
+}
+
+.key:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 #000;
+}
+
+/* 0占两格 */
+.key[data-num="0"] {
+  grid-column: span 2;
+  width: 102px;
+}
+
+/* 清除按钮红色 */
+.key.clear {
+  background: linear-gradient(145deg, #4a2a2a, #2a1a1a);
+  border-color: #ff4444;
+  color: #ff4444;
+}
+
+.key.ok {
+  border-color: #ffd700;
+  color: #ffd700;
+  grid-column: span 3;
+  width: 162px;
+  background: linear-gradient(145deg, #2a5a2a, #1a3a1a);
+}
+
+/* 方向键 */
+#controls {
+  position: absolute;
+  bottom: 250px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px;
+  pointer-events: auto;
+  display: none;
+}
+
+.control-btn {
+  width: 70px;
+  height: 70px;
+  background: rgba(255, 215, 0, 0.2);
+  border: 3px solid #ffd700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  color: #ffd700;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.control-btn:active {
+  background: rgba(255, 215, 0, 0.5);
+  transform: scale(0.95);
+}
+
+/* 连击显示 */
+#combo {
+  position: absolute;
+  top: 50px;
+  right: 10px;
+  left: auto;
+  transform: none;
+  text-align: right;
+  font-size: 16px;
+  text-shadow: 2px 2px 0 #000;
+  pointer-events: none;
+}
+
+#combo.show {
+  opacity: 1;
+}
+
+/* 彩蛋提示 */
+#easter-egg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ffd700;
+  font-size: 32px;
+  font-weight: bold;
+  text-shadow: 0 0 20px #ff6b6b;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s;
+  z-index: 100;
+}
+
+#easter-egg.show {
+  opacity: 1;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* 狂暴模式闪烁效果 */
+@keyframes fever-flash {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.5) drop-shadow(0 0 10px #ff0000); }
+}
+
+.fever-mode {
+  animation: fever-flash 0.3s ease-in-out infinite;
+}
+
+/* 核弹爆炸效果 */
+.nuke-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,200,0,0.5) 30%, transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 150;
+  transition: opacity 0.1s ease-out;
+}
+
+.nuke-flash.show {
+  opacity: 1;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+/* 开始/结束画面 */
+#overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  z-index: 200;
+  pointer-events: auto;
+}
+
+#overlay h1 {
+  color: #ffd700;
+  font-size: 36px;
+  margin-bottom: 20px;
+  text-shadow: 3px 3px 0 #ff4444;
+}
+
+#overlay p {
+  font-size: 16px;
+  margin: 10px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.btn {
+  margin-top: 30px;
+  padding: 15px 40px;
+  font-size: 24px;
+  background: linear-gradient(145deg, #ff6b6b, #cc5555);
+  border: none;
+  border-radius: 30px;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #992222;
+  transition: all 0.1s;
+}
+
+.btn:active {
+  transform: translateY(6px);
+  box-shadow: 0 0 0 #992222;
+}

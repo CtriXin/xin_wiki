@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>数学飞机大战 - 狂暴模式</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <link rel="stylesheet" href="./game.css">
+</head>
+<body>
+  <!-- 触摸控制区域 -->
+  <div id="touch-left"
+    style="position:absolute; left:0; top:80px; width:35%; height:60%; z-index:5; display:flex; align-items:center; justify-content:center; pointer-events:auto;">
+    <div class="touch-hint"
+      style="color:rgba(255,215,0,0.4); font-size:24px; font-weight:bold; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px;">
+      <span style="font-size:36px;">←</span>
+      <span style="font-size:12px;">按住移动</span>
+    </div>
+  </div>
+  <div id="touch-right"
+    style="position:absolute; right:0; top:80px; width:35%; height:60%; z-index:5; display:flex; align-items:center; justify-content:center; pointer-events:auto;">
+    <div class="touch-hint"
+      style="color:rgba(255,215,0,0.4); font-size:24px; font-weight:bold; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px;">
+      <span style="font-size:36px;">→</span>
+      <span style="font-size:12px;">按住移动</span>
+    </div>
+  </div>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="ui-layer">
+    <div id="hud">
+      <div class="hud-item">关卡: <span id="level">1</span></div>
+      <div class="hud-item">次数: <span id="attempts">0</span></div>
+      <div class="hud-item">生命: <span id="lives">3</span></div>
+      <div class="hud-item" id="aim-toggle" style="cursor:pointer; background:rgba(255,215,0,0.3);" onclick="toggleAimMode()">
+        瞄准: <span id="aim-mode">手动</span>
+      </div>
+      <div class="hud-item" id="sound-toggle" style="cursor:pointer; background:rgba(0,255,255,0.2);" onclick="toggleSound()">
+        <span id="sound-icon">🔊</span> <span id="sound-text">开启</span>
+      </div>
+    </div>
+
+    <div id="combo">连击 x<span id="combo-count">0</span>! <span id="combo-text"></span></div>
+
+    <div id="easter-egg">🧧 春节彩蛋！🧧</div>
+
+    <div id="controls">
+      <div class="control-btn" id="btn-left">←</div>
+      <div class="control-btn" id="btn-right">→</div>
+    </div>
+
+    <div id="math-panel">
+      <div id="question">点击开始</div>
+      <div id="answer-display"></div>
+    </div>
+
+    <div id="keypad">
+      <div class="key" data-num="1">1</div>
+      <div class="key" data-num="2">2</div>
+      <div class="key" data-num="3">3</div>
+      <div class="key" data-num="4">4</div>
+      <div class="key" data-num="5">5</div>
+      <div class="key" data-num="6">6</div>
+      <div class="key" data-num="7">7</div>
+      <div class="key" data-num="8">8</div>
+      <div class="key" data-num="9">9</div>
+      <div class="key" data-num="0">0</div>
+      <div class="key clear" data-action="clear">清除</div>
+    </div>
+  </div>
+
+  <!-- 核弹爆炸闪光层 -->
+  <div id="nuke-flash" class="nuke-flash"></div>
+
+  <div id="overlay">
+    <h1>🧨 数学飞机大战 🧨</h1>
+    <p>算出答案，发射子弹！<br>消除所有方块过关<br>漏掉3个方块游戏结束</p>
+    <p style="color: #ffd700; font-size: 14px;">连对3题升级双发，5题散射，8题四连！</p>
+    <p style="color: #ff6b6b; font-size: 12px;">🔥 狂暴模式: 连击x3加速，x5穿透，≥20清屏！</p>
+    <button class="btn" onclick="startGame()">开始游戏</button>
+  </div>
+
+  <script src="./game.js"></script>
+</body>
+</html>

@@ -9,6 +9,7 @@ export default defineConfig({
     // 导航栏 - 重排顺序，移除模板
     nav: [
       { text: '首页', link: '/' },
+      { text: '🎮 游戏', link: '/features/game/' },
       { text: '脚本', link: '/scripts/' },
       { text: '功能', link: '/features/' },
       { text: '迭代', link: '/iterations/' },
@@ -50,8 +51,16 @@ export default defineConfig({
           ]
         },
         {
-          text: '域名配置工具',
+          text: '🎮 数学飞机大战',
           collapsed: false,
+          items: [
+            { text: '游戏介绍', link: '/features/game/' },
+            { text: '开始游玩 ↗', link: '/game/index.html' },
+          ]
+        },
+        {
+          text: '域名配置工具',
+          collapsed: true,
           items: [
             { text: '工具概览', link: '/features/domain-tool/' },
             { text: '架构与原理', link: '/features/domain-tool/architecture' },
