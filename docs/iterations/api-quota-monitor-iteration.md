@@ -62,7 +62,7 @@ python backend/server.py
 ```
 
 ### 访问界面
-- **地址**: http://localhost:3001
+- **地址**: 本地运行时访问 `http://localhost:3001`
 - **刷新数据**: 点击"🔄 刷新"按钮
 - **配置管理**: 点击"⚙️ 配置"按钮
 

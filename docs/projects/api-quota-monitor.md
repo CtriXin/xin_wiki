@@ -51,7 +51,7 @@ source venv/bin/activate
 python server.py
 ```
 
-访问 [http://localhost:3001](http://localhost:3001) 查看配额监控界面。
+启动服务后，访问本地地址 `http://localhost:3001` 查看配额监控界面。
 
 ## 🔧 配置指南
 

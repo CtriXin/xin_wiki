@@ -14,7 +14,7 @@
 
 **手机用户**：建议将手机横屏获得最佳体验
 
-[旧版本 V1 →](/xin_wiki/game-full.html)
+[旧版本 V1 →](/game-full.html)
 
 ---
 

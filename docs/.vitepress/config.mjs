@@ -74,6 +74,16 @@ export default defineConfig({
           text: '问题修复',
           items: [
             { text: '概览', link: '/bugfixes/' },
+            { text: 'API配额监控 Bugfix', link: '/bugfixes/api-quota-monitor-bugfix' },
+          ]
+        }
+      ],
+      '/projects/': [
+        {
+          text: '项目文档',
+          items: [
+            { text: '概览', link: '/projects/' },
+            { text: 'API配额监控', link: '/projects/api-quota-monitor' },
           ]
         }
       ]
