@@ -43,5 +43,5 @@ tags: [domain-tool, architecture, evolution, roadmap]
 
 ## 延伸阅读与实战指引
 
-- **[子项目实战手册 (README)](/Users/xin/ptc_v5_noval_v4/tools/domain-tool/README.md)**: 包含进阶命令、Grep技巧及审批模拟。
-- **[架构深潜 (Deep Dive)](/Users/xin/ptc_v5_noval_v4/tools/domain-tool/ARCHITECTURE_DEEP_DIVE.md)**: 详解母子调用链、Simple模板机制及合并优先级。
+- **子项目实战手册 (README)**: 包含进阶命令、Grep技巧及审批模拟（见项目源码目录）。
+- **架构深潜 (Deep Dive)**: 详解母子调用链、Simple模板机制及合并优先级（见项目源码目录）。

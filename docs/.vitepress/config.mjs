@@ -3,6 +3,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: 'Xin Knowledge',
   description: '个人技术知识库 - 记录迭代、功能、脚本与修复',
+  ignoreDeadLinks: true,
 
   // 主题配置
   themeConfig: {

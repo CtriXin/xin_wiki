@@ -31,23 +31,13 @@
     <div>⛏️ 矿工等级: <span id="mineLevel">1</span></div>
     <div>🕳️ 矿层: <span id="mineDepth">1</span></div>
     <div>🔋 体力: <span id="mineStamina">0/0</span></div>
-    <div class="mine-stamina-wrap">
-      <div id="mineStaminaBar"></div>
-    </div>
     <div>🪨 矿点: <span id="mineNodes">0</span></div>
     <div>🗺️ 矿区: <span id="mineMap">林地矿井</span></div>
     <div>📜 任务: <span id="mineQuest">采集矿石 0/4</span></div>
   </div>
-  <button id="minePanelToggle" type="button">⛏</button>
   <div id="mineControls">
     <button id="mineMapBtn" type="button">切换矿区</button>
     <button id="mineBagBtn" type="button">矿工背包</button>
-  </div>
-  <div id="mineStaminaHud">
-    <div id="mineStaminaHudText">矿工体力 0/0</div>
-    <div class="mine-stamina-hud-track">
-      <div id="mineStaminaHudBar"></div>
-    </div>
   </div>
 
   <div id="mineBagPanel" class="hidden">
@@ -117,22 +107,8 @@
   <button id="skillBtn" type="button">释放技能</button>
   <button id="forgeBtn" type="button">装备台</button>
   <button id="customBtn" type="button">自定义</button>
-  <button id="learningBtn" type="button">学习模式</button>
   <button id="styleBtn" type="button">画风</button>
   <button id="pauseBtn" type="button">暂停</button>
-
-  <div id="learningPanel" class="hidden">
-    <div class="forge-title">数学训练营</div>
-    <div class="forge-row">目标答案：<span id="learningTarget">-</span> · 等级：<span id="learningLevel">1</span></div>
-    <div class="forge-row">连对：<span id="learningStreak">0</span> · 正确率：<span id="learningAccuracy">0%</span></div>
-    <div class="forge-row">当前题：<span id="learningQuestion">-</span></div>
-    <div class="forge-row">
-      <input id="learningInput" type="text" inputmode="numeric" placeholder="输入答案(可输 > < =)">
-    </div>
-    <button id="learningSubmit" type="button">提交答案（战斗/训练）</button>
-    <button id="learningRetarget" type="button">更换目标答案</button>
-    <div class="forge-row">规则：仅能击杀答案等于目标的怪；错点会扣血。</div>
-  </div>
 
   <button id="guideToggle" type="button">推荐</button>
   <div id="guideDrawer" class="collapsed">
@@ -163,11 +139,7 @@
       <button class="craft-cell" data-cell="3" type="button">空</button>
     </div>
     <div class="forge-row">当前配方：<span id="craftPreview">未放入材料</span></div>
-    <div class="forge-row">配方类型：<span id="craftRecipeName">未识别</span></div>
-    <div class="forge-row">成功率：<span id="craftSuccessRate">-</span> · 爆炸率：<span id="craftExplodeRate">-</span></div>
-    <div class="forge-row">结果倾向：<span id="craftOutcomeHint">先放入材料</span></div>
-    <div class="forge-row"><span id="craftRuleBook">手册：先放入材料</span></div>
-    <div class="forge-row">稳定配方：2-1-1强化 / 1-2-1铸造 / 1-1-2熔铸 / 3-1-0修复 / 2-2-0回流</div>
+    <div class="forge-row">配方示例：🧩🔷 / 💎🧩 = 铸造武器</div>
     <button id="craftDo" type="button">开始合成</button>
     <div id="craftFx" class="hidden">
       <div id="craftFxBar"></div>
@@ -226,14 +198,6 @@
       <div id="introText" class="forge-row">先选职业，再点怪战斗。战士/刺客可贴身，弓手/法师偏远程。</div>
       <button id="introNext" type="button">下一步</button>
       <button id="introStart" class="hidden" type="button">开始游戏</button>
-    </div>
-  </div>
-
-  <div id="craftResultOverlay" class="hidden">
-    <div class="craft-result-card">
-      <div id="craftResultTitle" class="forge-title">合成结果</div>
-      <div id="craftResultBody" class="forge-row">-</div>
-      <button id="craftResultOk" type="button">确定</button>
     </div>
   </div>
 

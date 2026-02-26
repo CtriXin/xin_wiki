@@ -3,32 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>数学飞机大战 V2 - 狂暴进化</title>
+  <title>数学飞机大战 V3.0 - 多模态全进化</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-  <link rel="stylesheet" href="./game/game-v2.css">
+  <link rel="stylesheet" href="./plan/game-v2.css">
 </head>
 <body>
+  <!-- 版本标识 -->
+  <div style="position:fixed; bottom:5px; left:5px; color:rgba(255,255,255,0.2); font-size:10px; z-index:1000; pointer-events:none;">v3.0 Multi-Mode Edition</div>
   <!-- 返回按钮 -->
   <a href="/xin_wiki/features/game/" class="back-btn">← 返回</a>
   
-  <!-- 触摸控制区域 -->
-  <div id="touch-left"
-    style="position:absolute; left:0; top:100px; width:35%; height:60%; z-index:5; display:flex; align-items:center; justify-content:center; pointer-events:auto;">
-    <div class="touch-hint"
-      style="color:rgba(255,215,0,0.3); font-size:24px; font-weight:bold; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px;">
-      <span style="font-size:36px;">←</span>
-      <span style="font-size:12px;">按住移动</span>
-    </div>
-  </div>
-  <div id="touch-right"
-    style="position:absolute; right:0; top:100px; width:35%; height:60%; z-index:5; display:flex; align-items:center; justify-content:center; pointer-events:auto;">
-    <div class="touch-hint"
-      style="color:rgba(255,215,0,0.3); font-size:24px; font-weight:bold; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px;">
-      <span style="font-size:36px;">→</span>
-      <span style="font-size:12px;">按住移动</span>
-    </div>
-  </div>
-
   <canvas id="gameCanvas"></canvas>
 
   <!-- UI层 -->
@@ -36,6 +20,7 @@
     <!-- HUD -->
     <div id="hud">
       <div class="hud-item red">关卡: <span id="level">1</span></div>
+      <div id="progress-container"><div id="progress-bar"></div></div>
       <div class="hud-item red">生命: <span id="lives">❤️❤️❤️</span></div>
       <div class="hud-item gold">🪙 <span id="coins">0</span></div>
       <div class="hud-item cyan clickable" id="aim-toggle" onclick="toggleAimMode()">
@@ -83,8 +68,20 @@
 
     <!-- 数学题目 -->
     <div id="math-panel">
-      <div id="question">点击开始</div>
+      <div class="mode-indicator" id="mode-text">狙击模式</div>
+      <div id="question">准备就绪</div>
       <div id="answer-display"></div>
+    </div>
+
+    <!-- 终极技能 -->
+    <div id="ult-container">
+      <div class="ult-ring"></div>
+      <div id="ult-btn" onclick="activateUltimate()">ULT</div>
+    </div>
+
+    <!-- 手动射击按钮 -->
+    <div id="fire-container">
+      <div id="fire-btn" onmousedown="manualFire()" ontouchstart="manualFire(event)">FIRE</div>
     </div>
 
     <!-- 数字键盘 -->
@@ -120,14 +117,13 @@
 
   <!-- 开始/结束画面 -->
   <div id="overlay">
-    <h1>🧨 数学飞机大战 V2</h1>
-    <div class="subtitle">狂暴进化版</div>
+    <h1>🧨 数学飞机大战 V3.0</h1>
+    <div class="subtitle">多模式教学进化版</div>
     <div class="features">
-      <p><span>🔥 狂暴模式:</span> 连击x3加速 x5穿透</p>
-      <p><span>👑 Boss战:</span> 每5关挑战年兽</p>
-      <p><span>🛒 道具商店:</span> 冻结/炸弹/护盾</p>
-      <p><span>🏆 成就系统:</span> 解锁勋章</p>
-      <p><span>✈️ 飞机进化:</span> 速度/火力型</p>
+      <p><span>🎯 狙击模式:</span> 看题输入答案，爆发连射</p>
+      <p><span>🚀 冲撞模式:</span> 寻找正确答案，直接撞击</p>
+      <p><span>💎 数字合成:</span> 限次内射击累加，精准达标</p>
+      <p><span>🛒 道具 & 🏆 成就:</span> 全面系统化</p>
     </div>
     
     <!-- 飞机选择 -->
@@ -162,7 +158,7 @@
     </div>
   </div>
 
-  <script src="./game/game-v2.js"></script>
+  <script src="./plan/game-v2.js"></script>
   <script>
     // 飞机选择
     function selectPlane(type, el) {
