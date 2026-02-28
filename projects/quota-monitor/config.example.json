@@ -1,0 +1,16 @@
+{
+  "kimi": {
+    "auth_token": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9...",
+    "device_id": "",
+    "session_id": "",
+    "traffic_id": ""
+  },
+  "minimax": {
+    "api_token": "sk-api-...",
+    "region": "china"
+  },
+  "bailian": {
+    "cookie": "cna=...; aliyun_lang=zh; ...",
+    "sec_token": ""
+  }
+}

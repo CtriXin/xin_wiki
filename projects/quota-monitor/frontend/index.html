@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Quota Monitor | 控制台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Vercel / Linear inspired dark theme */
+            --bg-base: #000000;
+            --bg-panel: #0A0A0A;
+            --bg-card: #111111;
+            --bg-card-hover: #161616;
+            
+            --border-dim: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(255, 255, 255, 0.2);
+            
+            --text-primary: #EDEDED;
+            --text-secondary: #A1A1AA;
+            --text-tertiary: #71717A;
+            
+            --brand-kimi: #6366F1;
+            --brand-minimax: #10B981;
+            --brand-bailian: #F59E0B;
+            --brand-codex: #3B82F6;
+            --brand-gemini: #8B5CF6;
+            
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            
+            --shadow-subtle: 0 4px 24px -1px rgba(0, 0, 0, 0.5);
+            --transition: all 0.25s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-y: scroll;
+        }
+
+        /* Subtle top glow */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 800px; height: 400px;
+            background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 48px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 48px;
+        }
+
+        /* Minimalist Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-dim);
+            padding-bottom: 24px;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand-logo {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, #fff, #999);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            color: #000; font-size: 1.2rem;
+        }
+
+        .brand-text h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+        
+        .brand-text p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            background: var(--bg-card);
+            padding: 8px 16px;
+            border-radius: 100px;
+            border: 1px solid var(--border-dim);
+        }
+
+        .dot {
+            width: 8px; height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        /* Main Layout */
+        .main-workspace {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 48px;
+            align-items: start;
+        }
+
+        /* Sleek Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: sticky;
+            top: 48px;
+        }
+
+        .sidebar-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            padding-left: 12px;
+        }
+
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: left;
+        }
+
+        .tab-btn:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            background: var(--bg-card);
+            border-color: var(--border-dim);
+            color: var(--text-primary);
+        }
+
+        .tab-btn .icon {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        .tab-btn.active .icon { opacity: 1; }
+
+        .tab-btn[data-provider="kimi"].active .icon { color: var(--brand-kimi); }
+        .tab-btn[data-provider="minimax"].active .icon { color: var(--brand-minimax); }
+        .tab-btn[data-provider="bailian"].active .icon { color: var(--brand-bailian); }
+        .tab-btn[data-provider="codex"].active .icon { color: var(--brand-codex); }
+        .tab-btn[data-provider="gemini"].active .icon { color: var(--brand-gemini); }
+
+        .status-tag {
+            margin-left: auto;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--text-tertiary);
+        }
+        .tab-btn[data-status="success"] .status-tag { background: var(--success); }
+        .tab-btn[data-status="error"] .status-tag { background: var(--danger); }
+        .tab-btn[data-status="loading"] .status-tag { background: var(--warning); animation: blink 1s infinite; }
+
+        @keyframes blink { 50% { opacity: 0.3; } }
+
+        /* Content Area */
+        .tab-content { display: none; animation: slideUp 0.3s ease; }
+        .tab-content.active { display: block; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Modern Data Cards */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .data-card {
+            background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-base) 100%);
+            border: 1px solid var(--border-dim);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-subtle);
+            transition: var(--transition);
+        }
+
+        .data-card:hover {
+            border-color: var(--border-focus);
+            background: linear-gradient(180deg, var(--bg-card-hover) 0%, var(--bg-base) 100%);
+        }
+
+        /* Elegant Thin Rings */
+        .usage-layout {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .ring-wrapper {
+            position: relative;
+            width: 100px; height: 100px;
+            flex-shrink: 0;
+        }
+
+        .ring-wrapper svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .ring-bg { fill: none; stroke: var(--border-dim); stroke-width: 6; }
+        .ring-progress {
+            fill: none; stroke-width: 6; stroke-linecap: round;
+            stroke-dasharray: 282.74; /* 2 * PI * 45 */
+            stroke-dashoffset: 282.74;
+            transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .ring-center {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .ring-center .pct { font-size: 1.25rem; font-weight: 600; color: var(--text-primary); line-height: 1; }
+        .ring-center .lbl { font-size: 0.65rem; color: var(--text-tertiary); font-weight: 500; margin-top: 4px; text-transform: uppercase; }
+
+        .usage-metrics { flex-grow: 1; }
+        .metric-title { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .metric-value { font-size: 1.75rem; font-weight: 600; color: var(--text-primary); letter-spacing: -0.02em; display: flex; align-items: baseline; gap: 8px; }
+        .metric-total { font-size: 1rem; color: var(--text-tertiary); font-weight: 400; }
+        .metric-desc { font-size: 0.85rem; color: var(--text-tertiary); margin-top: 8px; }
+
+        /* Detail Rows */
+        .info-list {
+            display: flex; flex-direction: column; gap: 12px;
+            margin-top: 24px;
+        }
+
+        .info-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-dim);
+            border-radius: var(--radius-md);
+        }
+
+        .info-label { color: var(--text-secondary); font-size: 0.9rem; display: flex; align-items: center; gap: 12px; }
+        .info-value { color: var(--text-primary); font-size: 0.9rem; font-weight: 500; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+        /* Floating Toolbar */
+        .toolbar {
+            position: fixed;
+            bottom: 32px; left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            background: rgba(17, 17, 17, 0.8);
+            backdrop-filter: blur(24px);
+            padding: 8px;
+            border-radius: 100px;
+            border: 1px solid var(--border-dim);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            z-index: 100;
+        }
+
+        .toolbar-btn {
+            background: transparent; border: none;
+            color: var(--text-secondary);
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; cursor: pointer; transition: var(--transition);
+        }
+
+        .toolbar-btn:hover { background: var(--border-dim); color: var(--text-primary); }
+        .toolbar-btn.primary { background: var(--text-primary); color: var(--bg-base); }
+        .toolbar-btn.primary:hover { background: #fff; transform: scale(1.05); }
+
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Modal */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center; z-index: 2000;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: var(--bg-panel); border: 1px solid var(--border-focus);
+            border-radius: var(--radius-xl); width: 100%; max-width: 500px;
+            padding: 40px; box-shadow: 0 25px 50px -12px rgba(0,0,0,1);
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+        .modal-header h2 { font-size: 1.25rem; font-weight: 600; }
+        .close-btn { background: transparent; border: none; color: var(--text-secondary); font-size: 1.25rem; cursor: pointer; }
+        
+        .form-group { margin-bottom: 24px; }
+        .form-label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px; }
+        .form-input {
+            width: 100%; background: var(--bg-base); border: 1px solid var(--border-dim);
+            border-radius: var(--radius-sm); padding: 12px 16px; color: var(--text-primary);
+            font-family: inherit; font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+        }
+        .form-input:focus { border-color: var(--text-secondary); }
+        textarea.form-input { min-height: 100px; font-family: ui-monospace, monospace; font-size: 0.85rem; }
+        
+        .btn-submit {
+            width: 100%; background: var(--text-primary); color: var(--bg-base);
+            border: none; padding: 14px; border-radius: var(--radius-sm);
+            font-size: 0.95rem; font-weight: 600; cursor: pointer; margin-top: 16px;
+        }
+        .btn-submit:hover { opacity: 0.9; }
+        .btn-secondary {
+            width: 100%; background: transparent; color: var(--text-secondary);
+            border: 1px solid var(--border-dim); padding: 10px; border-radius: var(--radius-sm);
+            font-size: 0.85rem; cursor: pointer; margin-top: 8px;
+        }
+        .btn-secondary:hover { background: var(--border-dim); color: var(--text-primary); }
+        .btn-row { display: flex; gap: 8px; }
+        .btn-row .btn-secondary { width: auto; flex: 1; }
+        .oauth-status {
+            margin-top: 8px;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-dim);
+            background: var(--bg-base);
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+        .hint-text {
+            margin-top: 8px;
+            color: var(--text-tertiary);
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 900px) {
+            .main-workspace { grid-template-columns: 1fr; gap: 32px; }
+            .sidebar { flex-direction: row; overflow-x: auto; position: relative; top: 0; padding-bottom: 12px; }
+            .tab-btn { min-width: 160px; }
+            .cards-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="brand-section">
+                <div class="brand-logo"><i class="fas fa-layer-group"></i></div>
+                <div class="brand-text">
+                    <h1>Quota Monitor</h1>
+                    <p>API Resource Dashboard</p>
+                </div>
+            </div>
+            <div class="system-status">
+                <span class="dot"></span>
+                <span id="lastUpdateTime">Waiting for sync...</span>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="main-workspace">
+            <!-- Sidebar -->
+            <nav class="sidebar" id="tabs">
+                <div class="sidebar-title">Providers</div>
+                <button class="tab-btn active" data-provider="kimi">
+                    <span class="icon"><i class="fas fa-robot"></i></span>
+                    <span>Kimi</span>
+                    <span class="status-tag"></span>
+                </button>
+                <button class="tab-btn" data-provider="minimax">
+                    <span class="icon"><i class="fas fa-brain"></i></span>
+                    <span>MiniMax</span>
+                    <span class="status-tag"></span>
+                </button>
+                <button class="tab-btn" data-provider="bailian">
+                    <span class="icon"><i class="fas fa-cloud"></i></span>
+                    <span>Ali Bailian</span>
+                    <span class="status-tag"></span>
+                </button>
+                <button class="tab-btn" data-provider="codex">
+                    <span class="icon"><i class="fas fa-code"></i></span>
+                    <span>Codex</span>
+                    <span class="status-tag"></span>
+                </button>
+                <button class="tab-btn" data-provider="gemini">
+                    <span class="icon"><i class="fas fa-gem"></i></span>
+                    <span>Gemini</span>
+                    <span class="status-tag"></span>
+                </button>
+            </nav>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <div class="tab-content active" id="content-kimi"><div id="kimi-content"></div></div>
+                <div class="tab-content" id="content-minimax"><div id="minimax-content"></div></div>
+                <div class="tab-content" id="content-bailian"><div id="bailian-content"></div></div>
+                <div class="tab-content" id="content-codex"><div id="codex-content"></div></div>
+                <div class="tab-content" id="content-gemini"><div id="gemini-content"></div></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Center Floating Toolbar -->
+    <div class="toolbar">
+        <button class="toolbar-btn" id="settingsBtn" title="Settings"><i class="fas fa-cog"></i></button>
+        <button class="toolbar-btn primary" id="refreshBtn" title="Sync Data"><i class="fas fa-sync-alt"></i></button>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="modalOverlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Configuration</h2>
+                <button class="close-btn" id="closeModal"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="configForm">
+                <div class="form-group">
+                    <label class="form-label" style="color: var(--brand-kimi)">Kimi Auth Token</label>
+                    <input type="password" class="form-input" name="kimi_auth_token" placeholder="eyJhbGciOiJIUzI1NiI...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" style="color: var(--brand-minimax)">MiniMax API Token</label>
+                    <input type="password" class="form-input" name="minimax_api_token" placeholder="eyJhbGciOiJIUzI1NiI...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" style="color: var(--brand-bailian)">Ali Bailian cURL</label>
+                    <textarea class="form-input" id="bailianCurl" placeholder="Paste 'Copy as cURL (bash)' here..."></textarea>
+                    <button type="button" class="btn-secondary" id="bailianImportBtn">Parse & Import cURL</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" style="color: var(--brand-codex)">Codex Connect (Browser Login)</label>
+                    <div class="btn-row">
+                        <button type="button" class="btn-secondary" id="codexOAuthStartBtn">Start Login</button>
+                        <button type="button" class="btn-secondary" id="codexOAuthStopBtn">Stop</button>
+                    </div>
+                    <div class="oauth-status" id="codexOAuthStatus">Not connected</div>
+                    <p class="hint-text">Opens ChatGPT login page. After login, session will be saved automatically.</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" style="color: var(--brand-codex)">Codex cURL (Fallback)</label>
+                    <textarea class="form-input" id="codexCurl" placeholder="Paste ChatGPT wham/usage cURL here..."></textarea>
+                    <button type="button" class="btn-secondary" id="codexImportBtn">Import Codex cURL</button>
+                </div>
+                <button type="submit" class="btn-submit">Save Settings</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        const providerInfo = ['kimi', 'minimax', 'bailian', 'codex', 'gemini'];
+        let currentProvider = 'kimi';
+        let allData = {};
+        let codexOAuthPollTimer = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initTabs();
+            initSettings();
+            fetchAllData();
+            document.getElementById('refreshBtn').onclick = fetchAllData;
+        });
+
+        function initSettings() {
+            const modal = document.getElementById('modalOverlay');
+            const form = document.getElementById('configForm');
+            const codexStatusEl = document.getElementById('codexOAuthStatus');
+
+            function stopCodexPoll() {
+                if (codexOAuthPollTimer) {
+                    clearInterval(codexOAuthPollTimer);
+                    codexOAuthPollTimer = null;
+                }
+            }
+
+            function renderCodexStatus(s) {
+                const status = s?.status || 'idle';
+                const hasWebSession = !!s?.hasWebSession;
+                const msg = s?.message || '';
+                const checked = s?.lastCheckedAt ? `Last check: ${s.lastCheckedAt}` : '';
+                const err = s?.lastError ? `Error: ${s.lastError}` : '';
+                const parts = [
+                    `Status: ${status}`,
+                    hasWebSession ? 'Session: available' : 'Session: none',
+                    msg,
+                    checked,
+                    err
+                ].filter(Boolean);
+                codexStatusEl.textContent = parts.join(' | ');
+            }
+
+            async function refreshCodexStatus() {
+                try {
+                    const r = await fetch('/api/codex/oauth/status');
+                    const d = await r.json();
+                    renderCodexStatus(d);
+                    if (d.status !== 'pending') stopCodexPoll();
+                } catch {
+                    codexStatusEl.textContent = 'Status: request failed';
+                }
+            }
+
+            function startCodexPoll() {
+                stopCodexPoll();
+                codexOAuthPollTimer = setInterval(refreshCodexStatus, 3000);
+            }
+            
+            document.getElementById('settingsBtn').onclick = async () => {
+                modal.classList.add('active');
+                try {
+                    const r = await fetch('/api/config');
+                    const cfg = await r.json();
+                    form.kimi_auth_token.value = cfg.kimi?.auth_token || '';
+                    form.minimax_api_token.value = cfg.minimax?.api_token || '';
+                } catch (e) {}
+                refreshCodexStatus();
+            };
+            
+            document.getElementById('closeModal').onclick = () => {
+                modal.classList.remove('active');
+                stopCodexPoll();
+            };
+            
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                const config = {
+                    kimi: { auth_token: form.kimi_auth_token.value },
+                    minimax: { api_token: form.minimax_api_token.value }
+                };
+                await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
+                modal.classList.remove('active');
+                stopCodexPoll();
+                fetchAllData();
+            };
+            
+            document.getElementById('bailianImportBtn').onclick = async () => {
+                const curl = document.getElementById('bailianCurl').value.trim();
+                if(!curl) return;
+                const r = await fetch('/api/bailian/import-curl', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ curl }) });
+                if ((await r.json()).ok) { 
+                    document.getElementById('bailianCurl').value = '';
+                    modal.classList.remove('active'); 
+                    stopCodexPoll();
+                    fetchAllData(); 
+                }
+            };
+
+            document.getElementById('codexImportBtn').onclick = async () => {
+                const curl = document.getElementById('codexCurl').value.trim();
+                if (!curl) return;
+                const r = await fetch('/api/codex/import-curl', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ curl })
+                });
+                const d = await r.json();
+                if (d.ok) {
+                    document.getElementById('codexCurl').value = '';
+                    await refreshCodexStatus();
+                    fetchAllData();
+                } else {
+                    codexStatusEl.textContent = `Status: import failed | ${d.error || 'unknown error'}`;
+                }
+            };
+
+            document.getElementById('codexOAuthStartBtn').onclick = async () => {
+                codexStatusEl.textContent = 'Status: starting login browser...';
+                const r = await fetch('/api/codex/oauth/start', { method: 'POST' });
+                const d = await r.json();
+                renderCodexStatus(d);
+                if (d.status === 'pending') startCodexPoll();
+            };
+
+            document.getElementById('codexOAuthStopBtn').onclick = async () => {
+                const r = await fetch('/api/codex/oauth/stop', { method: 'POST' });
+                const d = await r.json();
+                renderCodexStatus(d);
+                stopCodexPoll();
+            };
+        }
+
+        function initTabs() {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const p = btn.dataset.provider;
+                    currentProvider = p;
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.provider === p));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === `content-${p}`));
+                    if (!allData[p]) fetchProviderData(p);
+                };
+            });
+        }
+
+        async function fetchAllData() {
+            const icon = document.querySelector('#refreshBtn i');
+            icon.classList.add('spin');
+            document.getElementById('lastUpdateTime').textContent = 'Syncing...';
+            
+            await Promise.all(providerInfo.map(p => fetchProviderData(p)));
+            
+            icon.classList.remove('spin');
+            const now = new Date();
+            document.getElementById('lastUpdateTime').textContent = `Synced at ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        }
+
+        async function fetchProviderData(p) {
+            const btn = document.querySelector(`.tab-btn[data-provider="${p}"]`);
+            try {
+                const r = await fetch(`${API_BASE}/api/quota/${p}`);
+                const data = await r.json();
+                allData[p] = data;
+                btn.dataset.status = data.error ? 'error' : 'success';
+                renderContent(p, data);
+            } catch (e) { btn.dataset.status = 'error'; }
+        }
+
+        function getRingColor(percent) {
+            if (percent > 90) return 'var(--danger)';
+            if (percent > 70) return 'var(--warning)';
+            return 'var(--success)';
+        }
+
+        function renderUsageRing(percent) {
+            const p = Math.max(0, Math.min(100, percent || 0));
+            const offset = 282.74 - (p / 100 * 282.74);
+            const color = getRingColor(p);
+            return `
+                <div class="ring-wrapper">
+                    <svg viewBox="0 0 100 100">
+                        <circle class="ring-bg" cx="50" cy="50" r="45"></circle>
+                        <circle class="ring-progress" cx="50" cy="50" r="45" style="stroke: ${color}; stroke-dashoffset: ${offset}"></circle>
+                    </svg>
+                    <div class="ring-center">
+                        <span class="pct">${p.toFixed(1)}</span>
+                        <span class="lbl">%</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderContent(p, data) {
+            const container = document.getElementById(`${p}-content`);
+            if (data.error) { 
+                container.innerHTML = `<div class="data-card" style="text-align:center; color:var(--danger); padding:40px;"><i class="fas fa-exclamation-triangle" style="font-size:2rem; margin-bottom:16px;"></i><p>${data.error}</p></div>`; 
+                return; 
+            }
+            
+            let html = '';
+            if (p === 'kimi') html = renderKimi(data);
+            else if (p === 'minimax') html = renderMiniMax(data);
+            else if (p === 'bailian') html = renderBailian(data);
+            else if (p === 'codex') html = renderCodex(data);
+            else if (p === 'gemini') html = renderGemini(data);
+            
+            container.innerHTML = html;
+            // Trigger reflow for SVG animation
+            setTimeout(() => { container.querySelectorAll('.ring-progress').forEach(el => { el.style.strokeDashoffset = el.style.strokeDashoffset; }); }, 50);
+        }
+
+        function renderKimi(data) {
+            return `
+                <div class="cards-grid">
+                    <div class="data-card">
+                        <div class="usage-layout">
+                            ${renderUsageRing(data.percentage)}
+                            <div class="usage-metrics">
+                                <div class="metric-title"><i class="fas fa-bolt" style="color:var(--brand-kimi)"></i> Main Quota</div>
+                                <div class="metric-value">${data.used?.toLocaleString() || 0} <span class="metric-total">/ ${data.total?.toLocaleString() || 0}</span></div>
+                                <div class="metric-desc">Tokens used</div>
+                            </div>
+                        </div>
+                    </div>
+                    ${data.rateLimit ? `
+                    <div class="data-card">
+                        <div class="usage-layout">
+                            ${renderUsageRing(data.rateLimit.percentage)}
+                            <div class="usage-metrics">
+                                <div class="metric-title"><i class="fas fa-tachometer-alt" style="color:var(--text-secondary)"></i> Rate Limit</div>
+                                <div class="metric-value">${data.rateLimit.used} <span class="metric-total">/ ${data.rateLimit.total}</span></div>
+                                <div class="metric-desc">Requests</div>
+                            </div>
+                        </div>
+                    </div>` : ''}
+                </div>
+                <div class="info-list">
+                    <div class="info-row"><span class="info-label"><i class="fas fa-clock"></i> Next Reset</span><span class="info-value">${formatDate(data.resetTime)}</span></div>
+                    <div class="info-row"><span class="info-label"><i class="fas fa-shield-check"></i> Status</span><span class="info-value" style="color:var(--success)">Healthy</span></div>
+                </div>
+            `;
+        }
+
+        function renderMiniMax(data) {
+            return `
+                <div class="cards-grid">
+                    <div class="data-card">
+                        <div class="usage-layout">
+                            ${renderUsageRing(data.percentage)}
+                            <div class="usage-metrics">
+                                <div class="metric-title"><i class="fas fa-microchip" style="color:var(--brand-minimax)"></i> Total Usage</div>
+                                <div class="metric-value">${data.used?.toLocaleString() || 0}</div>
+                                <div class="metric-desc">Tokens Consumed</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="data-card">
+                        <div class="usage-layout">
+                            <div class="ring-wrapper" style="display:flex;align-items:center;justify-content:center;background:var(--bg-base);border-radius:50%;border:1px solid var(--border-dim)">
+                                <i class="fas fa-globe" style="font-size:2rem;color:var(--brand-minimax)"></i>
+                            </div>
+                            <div class="usage-metrics">
+                                <div class="metric-title">Region & Balance</div>
+                                <div class="metric-value" style="font-size:1.5rem">${data.region?.toUpperCase()}</div>
+                                <div class="metric-desc">Remaining: ${data.remaining?.toLocaleString()}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="info-list">
+                    ${(data.models || []).map(m => `
+                        <div class="info-row">
+                            <span class="info-label">${m.name}</span>
+                            <span class="info-value">${m.percentage}% (${m.used?.toLocaleString()})</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderBailian(data) {
+            const list = [
+                { k: 'monthly', n: 'Monthly', i: 'fa-calendar-alt' },
+                { k: 'weekly', n: 'Weekly', i: 'fa-calendar-week' },
+                { k: 'fiveHour', n: '5-Hour', i: 'fa-clock' }
+            ];
+            return `
+                <div class="cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+                    ${list.map(s => {
+                        const d = data[s.k] || {};
+                        return `
+                        <div class="data-card">
+                            <div class="usage-layout">
+                                ${renderUsageRing(d.percentage)}
+                                <div class="usage-metrics">
+                                    <div class="metric-title"><i class="fas ${s.i}" style="color:var(--brand-bailian)"></i> ${s.n}</div>
+                                    <div class="metric-value">${d.used?.toLocaleString() || 0}</div>
+                                    <div class="metric-desc">Reset: ${d.resetTimeHuman || '-'}</div>
+                                </div>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+                <div class="info-list">
+                    <div class="info-row"><span class="info-label"><i class="fas fa-server"></i> Instance</span><span class="info-value">${data.instanceName}</span></div>
+                    <div class="info-row"><span class="info-label"><i class="fas fa-hourglass-half"></i> Valid For</span><span class="info-value">${data.remainingDays} Days</span></div>
+                </div>
+            `;
+        }
+
+        function renderCodex(data) {
+            const h5 = data.periods?.fiveHour || {};
+            const wk = data.periods?.week || {};
+            const val = (b) => (b.used !== null && b.total > 0) ? `${b.used.toLocaleString()} <span class="metric-total">/ ${b.total.toLocaleString()}</span>` : `${b.percent?.toFixed(1) || 0}%`;
+            return `
+                <div class="cards-grid">
+                    <div class="data-card">
+                        <div class="usage-layout">
+                            ${renderUsageRing(h5.percent)}
+                            <div class="usage-metrics">
+                                <div class="metric-title"><i class="fas fa-bolt" style="color:var(--brand-codex)"></i> 5-Hour Window</div>
+                                <div class="metric-value" style="font-size:1.5rem">${val(h5)}</div>
+                                <div class="metric-desc">Refresh: ${formatDate(h5.refreshAt)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="data-card">
+                        <div class="usage-layout">
+                            ${renderUsageRing(wk.percent)}
+                            <div class="usage-metrics">
+                                <div class="metric-title"><i class="fas fa-calendar-week" style="color:var(--brand-codex)"></i> Weekly Window</div>
+                                <div class="metric-value" style="font-size:1.5rem">${val(wk)}</div>
+                                <div class="metric-desc">Refresh: ${formatDate(wk.refreshAt)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="info-list">
+                    <div class="info-row"><span class="info-label"><i class="fas fa-envelope"></i> Account</span><span class="info-value">${data.accountEmail || 'N/A'}</span></div>
+                    <div class="info-row"><span class="info-label"><i class="fas fa-database"></i> Source</span><span class="info-value">${data.source}</span></div>
+                </div>
+            `;
+        }
+
+        function renderGemini(data) {
+            const pro = data.periods?.pro || {};
+            const flash = data.periods?.flash || {};
+            const val = (b) => (b.used !== null && b.total > 0) ? `${b.used.toLocaleString()} <span class="metric-total">/ ${b.total.toLocaleString()}</span>` : `${b.percent?.toFixed(1) || 0}%`;
+            return `
+                <div class="cards-grid">
+                    <div class="data-card">
+                        <div class="usage-layout">
+                            ${renderUsageRing(pro.percent)}
+                            <div class="usage-metrics">
+                                <div class="metric-title"><i class="fas fa-gem" style="color:var(--brand-gemini)"></i> Pro Model</div>
+                                <div class="metric-value" style="font-size:1.5rem">${val(pro)}</div>
+                                <div class="metric-desc">Refresh: ${formatDate(pro.refreshAt)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="data-card">
+                        <div class="usage-layout">
+                            ${renderUsageRing(flash.percent)}
+                            <div class="usage-metrics">
+                                <div class="metric-title"><i class="fas fa-bolt" style="color:var(--brand-gemini)"></i> Flash Model</div>
+                                <div class="metric-value" style="font-size:1.5rem">${val(flash)}</div>
+                                <div class="metric-desc">Refresh: ${formatDate(flash.refreshAt)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="info-list">
+                    <div class="info-row"><span class="info-label"><i class="fas fa-envelope"></i> Account</span><span class="info-value">${data.accountEmail || 'N/A'}</span></div>
+                    <div class="info-row"><span class="info-label"><i class="fas fa-history"></i> Last Check</span><span class="info-value">${data.latestUpdatedAt}</span></div>
+                </div>
+            `;
+        }
+
+        function formatDate(s) {
+            if(!s) return 'N/A';
+            try { const d = new Date(s); return d.toLocaleString('zh-CN', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
+            catch { return s; }
+        }
+    </script>
+</body>
+</html>
